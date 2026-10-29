@@ -40,12 +40,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const nextPuzzleBtn = document.getElementById('nextPuzzleBtn');
 
   // DOM Elements - Controls & Modals
-  const startGameBtn = document.getElementById('startGameBtn');
-  const newPuzzleBtn = document.getElementById('newPuzzleBtn');
-  const resetSessionBtn = document.getElementById('resetSessionBtn');
-  const retryApiBtn = document.getElementById('retryApiBtn');
-  const loadOfflineBtn = document.getElementById('loadOfflineBtn');
-  const toggleApiSimBtn = document.getElementById('toggleApiSimBtn');
+  const startGameBtn     = document.getElementById('startGameBtn');
+  const newPuzzleBtn     = document.getElementById('newPuzzleBtn');
+  const submitScoreBtn   = document.getElementById('submitScoreBtn');
+  const resetSessionBtn  = document.getElementById('resetSessionBtn');
+  const retryApiBtn      = document.getElementById('retryApiBtn');
+  const loadOfflineBtn   = document.getElementById('loadOfflineBtn');
+  const toggleApiSimBtn  = document.getElementById('toggleApiSimBtn');
   const simFailureStatus = document.getElementById('simFailureStatus');
 
   const alertBanner = document.getElementById('alertBanner');
@@ -65,6 +66,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const archModal = document.getElementById('archModal');
   const archInfoBtn = document.getElementById('archInfoBtn');
   const closeArchModalBtn = document.getElementById('closeArchModalBtn');
+
+  // Leaderboard elements
+  const refreshLeaderboardBtn  = document.getElementById('refreshLeaderboardBtn');
+  const leaderboardLoading     = document.getElementById('leaderboardLoading');
+  const leaderboardEmpty       = document.getElementById('leaderboardEmpty');
+  const leaderboardTable       = document.getElementById('leaderboardTable');
+  const leaderboardBody        = document.getElementById('leaderboardBody');
+  const myRankBanner           = document.getElementById('myRankBanner');
+  const myRankText             = document.getElementById('myRankText');
 
   let isSimulatingFailure = false;
 
@@ -111,8 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       updateIdentityUI(data.user);
       updateStatsUI(data.stats);
+      return data; // Return so callers can access user info without a second fetch
     } catch (err) {
       console.error('Failed to load session:', err);
+      return null;
     }
   }
 
@@ -230,6 +242,114 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
+  // LEADERBOARD (Persistent High Scores)
+  // ==========================================
+
+  /**
+   * Fetch top scores from the server and render the leaderboard table.
+   * @param {string|null} currentUsername - highlight this player's row if present
+   */
+  async function loadLeaderboard(currentUsername = null) {
+    leaderboardLoading.classList.remove('hidden');
+    leaderboardEmpty.classList.add('hidden');
+    leaderboardTable.classList.add('hidden');
+    myRankBanner.classList.add('hidden');
+
+    try {
+      const res  = await fetch('/api/leaderboard?limit=10');
+      const data = await res.json();
+
+      leaderboardLoading.classList.add('hidden');
+
+      if (!data.success || !data.scores || data.scores.length === 0) {
+        leaderboardEmpty.classList.remove('hidden');
+        return;
+      }
+
+      // Render rows
+      leaderboardBody.innerHTML = '';
+      data.scores.forEach((entry) => {
+        const isMe = currentUsername &&
+          entry.username.toLowerCase() === currentUsername.toLowerCase();
+
+        // Rank badge styling
+        let rankClass = 'lb-rank-n';
+        if (entry.rank === 1) rankClass = 'lb-rank-1';
+        else if (entry.rank === 2) rankClass = 'lb-rank-2';
+        else if (entry.rank === 3) rankClass = 'lb-rank-3';
+
+        const medal = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : entry.rank;
+
+        const roleTag = entry.role === 'admin'
+          ? `<span class="lb-role-badge lb-role-admin">Admin</span>`
+          : `<span class="lb-role-badge lb-role-player">Player</span>`;
+
+        const tr = document.createElement('tr');
+        if (isMe) tr.classList.add('lb-me');
+
+        tr.innerHTML = `
+          <td><span class="lb-rank-badge ${rankClass}">${medal}</span></td>
+          <td>${escapeHtml(entry.username)}${roleTag}${isMe ? ' <strong style="color:var(--primary);font-size:0.72rem;">(You)</strong>' : ''}</td>
+          <td><span class="lb-score-val">${entry.score}</span></td>
+          <td><span class="lb-streak-val">🔥 ${entry.bestStreak}</span></td>
+          <td>${entry.played}</td>
+        `;
+        leaderboardBody.appendChild(tr);
+      });
+
+      leaderboardTable.classList.remove('hidden');
+
+      // Show player's rank in banner if available
+      if (data.playerRank) {
+        myRankText.textContent = `You are currently ranked #${data.playerRank.rank} on the leaderboard!`;
+        myRankBanner.classList.remove('hidden');
+      }
+    } catch (err) {
+      leaderboardLoading.classList.add('hidden');
+      leaderboardEmpty.classList.remove('hidden');
+      console.error('Leaderboard load error:', err);
+    }
+  }
+
+  /**
+   * Submit current session score to the persistent leaderboard.
+   */
+  async function submitScore() {
+    try {
+      submitScoreBtn.disabled = true;
+      submitScoreBtn.textContent = '⏳ Submitting…';
+
+      const res  = await fetch('/api/leaderboard/submit', { method: 'POST' });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to submit score');
+      }
+
+      showAlert(`🏆 ${data.message}`, 'success');
+
+      // Refresh the leaderboard table with newly submitted data
+      const sessionRes  = await fetch('/api/session');
+      const sessionData = await sessionRes.json();
+      await loadLeaderboard(sessionData.user?.username);
+    } catch (err) {
+      showAlert(err.message, 'error');
+    } finally {
+      submitScoreBtn.disabled = false;
+      submitScoreBtn.textContent = '🏆 Submit Score';
+    }
+  }
+
+  /** Escape HTML to prevent XSS in username display */
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ==========================================
   // EVENT LISTENERS (Theme: Event-Driven Architecture)
   // ==========================================
 
@@ -239,6 +359,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Next Puzzle / New Puzzle
   nextPuzzleBtn.addEventListener('click', () => fetchNewPuzzle());
   newPuzzleBtn.addEventListener('click', () => fetchNewPuzzle());
+
+  // 11. Submit Score to Leaderboard
+  submitScoreBtn.addEventListener('click', () => submitScore());
+
+  // 12. Refresh Leaderboard
+  refreshLeaderboardBtn.addEventListener('click', async () => {
+    const sessionRes  = await fetch('/api/session');
+    const sessionData = await sessionRes.json();
+    loadLeaderboard(sessionData.user?.isLoggedIn ? sessionData.user.username : null);
+  });
 
   // 3. Retry on Error
   retryApiBtn.addEventListener('click', () => fetchNewPuzzle(false));
@@ -343,6 +473,8 @@ document.addEventListener('DOMContentLoaded', () => {
       updateStatsUI(data.stats);
       identityModal.classList.add('hidden');
       showAlert(`Identity updated: ${data.user.username} (${data.user.role})`, 'success');
+      // Refresh leaderboard to highlight this player's existing entry if any
+      loadLeaderboard(data.user.username);
     } catch (err) {
       showAlert(err.message, 'error');
     }
@@ -379,6 +511,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   alertCloseBtn.addEventListener('click', hideAlert);
 
-  // Initialize
-  loadSession();
+  // Initialize: load session info AND the leaderboard on page load
+  loadSession().then((sessionData) => {
+    const username = sessionData?.user?.isLoggedIn ? sessionData.user.username : null;
+    loadLeaderboard(username);
+  });
 });

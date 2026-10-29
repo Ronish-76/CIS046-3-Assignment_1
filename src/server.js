@@ -4,12 +4,14 @@
  * 1. Distributed architecture (Client <-> Node/Express Backend <-> Banana Remote API)
  * 2. Virtual Identity (Session management, user authentication & role checks)
  * 3. Security (Solution hidden on backend, preventing inspect-element cheat)
+ * 4. Persistent Leaderboard (File-based high score system across all sessions)
  */
 
-const express = require('express');
-const session = require('express-session');
-const path = require('path');
-const bananaService = require('./banana.service');
+const express    = require('express');
+const session    = require('express-session');
+const path       = require('path');
+const bananaService    = require('./banana.service');
+const leaderboardSvc   = require('./leaderboard.service');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -243,7 +245,78 @@ app.post('/api/session/reset', (req, res) => {
 });
 
 // ==========================================
-// 3. ADMIN / DEMONSTRATION TOOLS (Theme: Testing & Error Scenarios)
+// 3. LEADERBOARD ROUTES (Theme: Persistent Identity & Competition)
+// ==========================================
+
+/**
+ * GET /api/leaderboard
+ * Returns the top 10 players sorted by score.
+ * Query param: ?limit=N to override (max 50)
+ */
+app.get('/api/leaderboard', (req, res) => {
+  try {
+    const limit  = Math.min(parseInt(req.query.limit) || 10, 50);
+    const scores = leaderboardSvc.getTopScores(limit);
+    const playerRank = req.session.user?.isLoggedIn
+      ? leaderboardSvc.getPlayerRank(req.session.user.username)
+      : null;
+
+    res.json({
+      success: true,
+      scores,
+      playerRank,
+      totalPlayers: scores.length
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/leaderboard/submit
+ * Saves the current session's score to the persistent leaderboard.
+ * Player must be logged in (not Guest) to submit.
+ */
+app.post('/api/leaderboard/submit', (req, res) => {
+  const user = req.session.user;
+
+  if (!user || !user.isLoggedIn) {
+    return res.status(401).json({
+      success: false,
+      error: 'You must set a player name (via "Change Identity") before your score can be saved to the leaderboard.'
+    });
+  }
+
+  if (!req.session.score || req.session.score === 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Your score is 0 — play at least one puzzle correctly before submitting!'
+    });
+  }
+
+  try {
+    const result = leaderboardSvc.submitScore(
+      user.username,
+      user.role,
+      req.session.score,
+      req.session.played,
+      req.session.streak
+    );
+
+    res.json({
+      success: true,
+      message: `Score submitted! You are ranked #${result.rank} on the leaderboard.`,
+      rank: result.rank,
+      entry: result.entry,
+      topScores: leaderboardSvc.getTopScores(10)
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
+// 4. ADMIN / DEMONSTRATION TOOLS (Theme: Testing & Error Scenarios)
 // ==========================================
 
 /**
@@ -262,15 +335,25 @@ app.post('/api/admin/toggle-failure', (req, res) => {
 });
 
 /**
- * Get system status and API health
+ * GET /api/admin/status - system health
  */
 app.get('/api/admin/status', (req, res) => {
   res.json({
     uptime: process.uptime(),
     nodeVersion: process.version,
     apiStatus: bananaService.getApiStatus(),
+    offlinePoolSize: bananaService.getOfflinePoolSize(),
     sessionUser: req.session.user
   });
+});
+
+/**
+ * POST /api/admin/clear-leaderboard
+ * Wipes all leaderboard entries (admin-only demonstration tool).
+ */
+app.post('/api/admin/clear-leaderboard', (req, res) => {
+  leaderboardSvc.clearLeaderboard();
+  res.json({ success: true, message: 'Leaderboard cleared.' });
 });
 
 // Start Express Server

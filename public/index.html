@@ -203,12 +203,59 @@
           <button id="newPuzzleBtn" class="btn btn-secondary" title="Fetch a new puzzle">
             🔄 New Puzzle
           </button>
+          <button id="submitScoreBtn" class="btn btn-primary" title="Save your score to the leaderboard">
+            🏆 Submit Score
+          </button>
           <button id="resetSessionBtn" class="btn btn-ghost" title="Reset current game score and stats">
             🧹 Reset Game Session
           </button>
           <button id="archInfoBtn" class="btn btn-ghost" title="View Distributed Architecture Details">
             ℹ️ Architecture Guide
           </button>
+        </div>
+      </section>
+
+      <!-- ── Leaderboard Section ── -->
+      <section class="leaderboard-section" id="leaderboardSection">
+        <div class="leaderboard-header">
+          <h2 class="leaderboard-title">🏆 Top Players Leaderboard</h2>
+          <button id="refreshLeaderboardBtn" class="btn btn-ghost btn-sm" title="Refresh leaderboard">
+            🔄 Refresh
+          </button>
+        </div>
+
+        <!-- Player's own rank summary (shown if on leaderboard) -->
+        <div id="myRankBanner" class="my-rank-banner hidden">
+          <span id="myRankText">You are ranked #1</span>
+        </div>
+
+        <!-- Loading state -->
+        <div id="leaderboardLoading" class="lb-loading">
+          <div class="lb-spinner"></div>
+          <span>Loading leaderboard…</span>
+        </div>
+
+        <!-- Empty state -->
+        <div id="leaderboardEmpty" class="lb-empty hidden">
+          <span class="lb-empty-icon">🎮</span>
+          <p>No scores yet — be the first to submit!</p>
+          <p class="lb-empty-hint">Set your player name, play some puzzles, then click <strong>🏆 Submit Score</strong>.</p>
+        </div>
+
+        <!-- Scores table -->
+        <div id="leaderboardTable" class="lb-table-wrap hidden">
+          <table class="lb-table">
+            <thead>
+              <tr>
+                <th class="lb-col-rank">Rank</th>
+                <th class="lb-col-name">Player</th>
+                <th class="lb-col-score">Score</th>
+                <th class="lb-col-streak">Best Streak</th>
+                <th class="lb-col-played">Puzzles</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardBody"></tbody>
+          </table>
         </div>
       </section>
     </main>

@@ -918,3 +918,204 @@ body {
     grid-template-columns: repeat(5, 1fr);
   }
 }
+
+
+/* =========================================
+   LEADERBOARD SECTION
+   ========================================= */
+
+.leaderboard-section {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.leaderboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.leaderboard-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff 30%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Player's own rank banner */
+.my-rank-banner {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-align: center;
+  animation: slideDown 0.3s ease;
+}
+
+/* Loading spinner (small variant for leaderboard) */
+.lb-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.lb-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(245, 158, 11, 0.15);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Empty state */
+.lb-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 0;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.lb-empty-icon {
+  font-size: 2.5rem;
+}
+
+.lb-empty p {
+  font-size: 0.92rem;
+}
+
+.lb-empty-hint {
+  font-size: 0.8rem !important;
+  color: var(--text-dim) !important;
+}
+
+/* Leaderboard table */
+.lb-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+}
+
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.lb-table thead {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.lb-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border-glass);
+  white-space: nowrap;
+}
+
+.lb-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.lb-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lb-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Highlight the current player's row */
+.lb-table tbody tr.lb-me {
+  background: rgba(245, 158, 11, 0.07);
+  border-left: 3px solid var(--primary);
+}
+
+/* Rank medals */
+.lb-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+}
+
+.lb-rank-1 { background: rgba(255, 215, 0, 0.2);  color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.4); }
+.lb-rank-2 { background: rgba(192, 192, 192, 0.2); color: #c0c0c0; border: 1px solid rgba(192,192,192,0.4); }
+.lb-rank-3 { background: rgba(205, 127, 50, 0.2);  color: #cd7f32; border: 1px solid rgba(205,127,50,0.4); }
+.lb-rank-n { background: rgba(255,255,255,0.05);   color: var(--text-muted); border: 1px solid var(--border-glass); }
+
+/* Score value */
+.lb-score-val {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 1rem;
+}
+
+/* Streak value */
+.lb-streak-val {
+  font-family: var(--font-mono);
+  color: #fbbf24;
+}
+
+/* Role badge */
+.lb-role-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  margin-left: 6px;
+}
+
+.lb-role-admin  { background: rgba(245,158,11,0.2); color: var(--primary); border: 1px solid rgba(245,158,11,0.35); }
+.lb-role-player { background: rgba(16,185,129,0.15); color: var(--success); }
+
+/* Column widths */
+.lb-col-rank   { width: 56px; }
+.lb-col-score  { width: 90px; }
+.lb-col-streak { width: 110px; }
+.lb-col-played { width: 90px; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .lb-col-streak,
+  .lb-col-played {
+    display: none;
+  }
+}
