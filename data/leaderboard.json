@@ -1,4 +1,14 @@
 {
-  "scores": []
+  "scores": [
+    {
+      "username": "nis",
+      "role": "player",
+      "score": 10,
+      "played": 1,
+      "bestStreak": 1,
+      "lastPlayed": "2026-10-29T08:09:34.562Z",
+      "firstPlayed": "2026-10-29T08:09:34.562Z",
+      "gamesSubmitted": 1
+    }
+  ]
 }
-
