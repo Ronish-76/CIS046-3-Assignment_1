@@ -1,94 +1,101 @@
 /**
  * Banana Puzzle Game - Client Controller
  * Demonstrates:
- * 1. Event-Driven Programming (EDP): Event listeners, DOM manipulation, asynchronous state flow
- * 2. Interoperability: HTTP client requests to Node.js backend
- * 3. Virtual Identity: Managing player login/logout and session updates
+ * 1. Event-Driven Programming (EDP): Event listeners, DOM manipulation, async state flow
+ * 2. Interoperability: HTTP requests to Node.js backend
+ * 3. Virtual Identity: Authenticated login/register and session management
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // DOM Elements - Screens
-  const startScreen = document.getElementById('startScreen');
-  const loadingView = document.getElementById('loadingView');
+
+  // ── Screen views ──────────────────────────────────────────────
+  const startScreen      = document.getElementById('startScreen');
+  const loadingView      = document.getElementById('loadingView');
   const activePuzzleView = document.getElementById('activePuzzleView');
-  const resultView = document.getElementById('resultView');
-  const errorView = document.getElementById('errorView');
+  const resultView       = document.getElementById('resultView');
+  const errorView        = document.getElementById('errorView');
 
-  // DOM Elements - Images & Inputs
-  const puzzleImage = document.getElementById('puzzleImage');
+  // ── Puzzle elements ───────────────────────────────────────────
+  const puzzleImage       = document.getElementById('puzzleImage');
   const puzzleSourceBadge = document.getElementById('puzzleSourceBadge');
-  const answerForm = document.getElementById('answerForm');
-  const answerInput = document.getElementById('answerInput');
-  const submitAnswerBtn = document.getElementById('submitAnswerBtn');
-  const quickNumpad = document.getElementById('quickNumpad');
+  const answerForm        = document.getElementById('answerForm');
+  const answerInput       = document.getElementById('answerInput');
+  const submitAnswerBtn   = document.getElementById('submitAnswerBtn');
+  const quickNumpad       = document.getElementById('quickNumpad');
 
-  // DOM Elements - Stats & Identity
-  const scoreDisplay = document.getElementById('scoreDisplay');
+  // ── Stats ─────────────────────────────────────────────────────
+  const scoreDisplay  = document.getElementById('scoreDisplay');
   const streakDisplay = document.getElementById('streakDisplay');
   const playedDisplay = document.getElementById('playedDisplay');
+
+  // ── Identity ─────────────────────────────────────────────────
   const userNameDisplay = document.getElementById('userNameDisplay');
-  const userRoleBadge = document.getElementById('userRoleBadge');
-  const apiStatusBadge = document.getElementById('apiStatusBadge');
+  const userRoleBadge   = document.getElementById('userRoleBadge');
+  const apiStatusBadge  = document.getElementById('apiStatusBadge');
+  const openAuthBtn     = document.getElementById('openAuthBtn');
+  const logoutHeaderBtn = document.getElementById('logoutHeaderBtn');
 
-  // DOM Elements - Result View Elements
-  const resultCard = document.getElementById('resultCard');
-  const resultIcon = document.getElementById('resultIcon');
-  const resultHeading = document.getElementById('resultHeading');
+  // ── Result view ───────────────────────────────────────────────
+  const resultCard     = document.getElementById('resultCard');
+  const resultIcon     = document.getElementById('resultIcon');
+  const resultHeading  = document.getElementById('resultHeading');
   const resultFeedback = document.getElementById('resultFeedback');
-  const resUserAns = document.getElementById('resUserAns');
-  const resCorrectAns = document.getElementById('resCorrectAns');
-  const nextPuzzleBtn = document.getElementById('nextPuzzleBtn');
+  const resUserAns     = document.getElementById('resUserAns');
+  const resCorrectAns  = document.getElementById('resCorrectAns');
+  const nextPuzzleBtn  = document.getElementById('nextPuzzleBtn');
 
-  // DOM Elements - Controls & Modals
-  const startGameBtn     = document.getElementById('startGameBtn');
-  const newPuzzleBtn     = document.getElementById('newPuzzleBtn');
-  const submitScoreBtn   = document.getElementById('submitScoreBtn');
-  const resetSessionBtn  = document.getElementById('resetSessionBtn');
-  const retryApiBtn      = document.getElementById('retryApiBtn');
-  const loadOfflineBtn   = document.getElementById('loadOfflineBtn');
-  const toggleApiSimBtn  = document.getElementById('toggleApiSimBtn');
+  // ── Controls ──────────────────────────────────────────────────
+  const startGameBtn    = document.getElementById('startGameBtn');
+  const newPuzzleBtn    = document.getElementById('newPuzzleBtn');
+  const submitScoreBtn  = document.getElementById('submitScoreBtn');
+  const resetSessionBtn = document.getElementById('resetSessionBtn');
+  const retryApiBtn     = document.getElementById('retryApiBtn');
+  const loadOfflineBtn  = document.getElementById('loadOfflineBtn');
+  const toggleApiSimBtn = document.getElementById('toggleApiSimBtn');
   const simFailureStatus = document.getElementById('simFailureStatus');
 
-  const alertBanner = document.getElementById('alertBanner');
-  const alertIcon = document.getElementById('alertIcon');
-  const alertMessage = document.getElementById('alertMessage');
+  // ── Alert ─────────────────────────────────────────────────────
+  const alertBanner   = document.getElementById('alertBanner');
+  const alertIcon     = document.getElementById('alertIcon');
+  const alertMessage  = document.getElementById('alertMessage');
   const alertCloseBtn = document.getElementById('alertCloseBtn');
 
-  // Modals
-  const identityModal = document.getElementById('identityModal');
-  const identityModalBtn = document.getElementById('identityModalBtn');
-  const closeIdentityModalBtn = document.getElementById('closeIdentityModalBtn');
-  const identityForm = document.getElementById('identityForm');
-  const usernameInput = document.getElementById('usernameInput');
-  const userRoleSelect = document.getElementById('userRoleSelect');
-  const logoutBtn = document.getElementById('logoutBtn');
+  // ── Auth Modal ────────────────────────────────────────────────
+  const authModal         = document.getElementById('authModal');
+  const closeAuthModalBtn = document.getElementById('closeAuthModalBtn');
+  const authTabs          = document.querySelectorAll('.auth-tab');
+  const loginForm         = document.getElementById('loginForm');
+  const registerForm      = document.getElementById('registerForm');
+  const loginUsername     = document.getElementById('loginUsername');
+  const loginPassword     = document.getElementById('loginPassword');
+  const regUsername       = document.getElementById('regUsername');
+  const regPassword       = document.getElementById('regPassword');
+  const regPasswordConfirm = document.getElementById('regPasswordConfirm');
 
-  const archModal = document.getElementById('archModal');
-  const archInfoBtn = document.getElementById('archInfoBtn');
+  // ── Architecture Modal ────────────────────────────────────────
+  const archModal        = document.getElementById('archModal');
+  const archInfoBtn      = document.getElementById('archInfoBtn');
   const closeArchModalBtn = document.getElementById('closeArchModalBtn');
 
-  // Leaderboard elements
-  const refreshLeaderboardBtn  = document.getElementById('refreshLeaderboardBtn');
-  const leaderboardLoading     = document.getElementById('leaderboardLoading');
-  const leaderboardEmpty       = document.getElementById('leaderboardEmpty');
-  const leaderboardTable       = document.getElementById('leaderboardTable');
-  const leaderboardBody        = document.getElementById('leaderboardBody');
-  const myRankBanner           = document.getElementById('myRankBanner');
-  const myRankText             = document.getElementById('myRankText');
+  // ── Leaderboard ───────────────────────────────────────────────
+  const refreshLeaderboardBtn = document.getElementById('refreshLeaderboardBtn');
+  const leaderboardLoading    = document.getElementById('leaderboardLoading');
+  const leaderboardEmpty      = document.getElementById('leaderboardEmpty');
+  const leaderboardTable      = document.getElementById('leaderboardTable');
+  const leaderboardBody       = document.getElementById('leaderboardBody');
+  const myRankBanner          = document.getElementById('myRankBanner');
+  const myRankText            = document.getElementById('myRankText');
 
   let isSimulatingFailure = false;
+  let currentUser = null; // tracks logged-in user client-side
 
-  // ==========================================
-  // VIEW SWITCHING HELPERS
-  // ==========================================
-  function showView(viewToShow) {
-    const views = [startScreen, loadingView, activePuzzleView, resultView, errorView];
-    views.forEach(v => {
-      if (v === viewToShow) {
-        v.classList.remove('hidden');
-      } else {
-        v.classList.add('hidden');
-      }
+  // ══════════════════════════════════════════════════════════════
+  // VIEW HELPERS
+  // ══════════════════════════════════════════════════════════════
+
+  function showView(view) {
+    [startScreen, loadingView, activePuzzleView, resultView, errorView].forEach(v => {
+      v === view ? v.classList.remove('hidden') : v.classList.add('hidden');
     });
   }
 
@@ -97,12 +104,12 @@ document.addEventListener('DOMContentLoaded', () => {
     alertBanner.className = 'alert-banner';
     if (type === 'error') {
       alertBanner.classList.add('alert-error');
-      alertIcon.textContent = '❌';
+      alertIcon.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
     } else if (type === 'success') {
       alertBanner.classList.add('alert-success');
-      alertIcon.textContent = '✅';
+      alertIcon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
     } else {
-      alertIcon.textContent = 'ℹ️';
+      alertIcon.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
     }
     alertBanner.classList.remove('hidden');
   }
@@ -111,17 +118,18 @@ document.addEventListener('DOMContentLoaded', () => {
     alertBanner.classList.add('hidden');
   }
 
-  // ==========================================
-  // SESSION & IDENTITY MANAGEMENT (Theme: Virtual Identity)
-  // ==========================================
+  // ══════════════════════════════════════════════════════════════
+  // SESSION / IDENTITY
+  // ══════════════════════════════════════════════════════════════
+
   async function loadSession() {
     try {
-      const res = await fetch('/api/session');
+      const res  = await fetch('/api/session');
       const data = await res.json();
-
       updateIdentityUI(data.user);
       updateStatsUI(data.stats);
-      return data; // Return so callers can access user info without a second fetch
+      currentUser = data.user?.isLoggedIn ? data.user : null;
+      return data;
     } catch (err) {
       console.error('Failed to load session:', err);
       return null;
@@ -131,50 +139,59 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateIdentityUI(user) {
     if (!user) return;
     userNameDisplay.textContent = user.username;
-    userRoleBadge.textContent = user.role;
-    userRoleBadge.className = 'user-role ' + (user.role === 'admin' ? 'badge-admin' : (user.isLoggedIn ? 'badge-player' : 'badge-guest'));
-    usernameInput.value = user.isLoggedIn ? user.username : '';
-    userRoleSelect.value = user.role === 'admin' ? 'admin' : 'player';
+
+    if (user.isLoggedIn) {
+      userRoleBadge.textContent = user.role;
+      userRoleBadge.className = 'user-role ' + (user.role === 'admin' ? 'badge-admin' : 'badge-player');
+      openAuthBtn.classList.add('hidden');
+      logoutHeaderBtn.classList.remove('hidden');
+    } else {
+      userRoleBadge.textContent = 'Not logged in';
+      userRoleBadge.className = 'user-role badge-guest';
+      openAuthBtn.classList.remove('hidden');
+      logoutHeaderBtn.classList.add('hidden');
+    }
   }
 
   function updateStatsUI(stats) {
     if (!stats) return;
-    scoreDisplay.textContent = stats.score;
-    streakDisplay.textContent = `🔥 ${stats.streak}`;
+    scoreDisplay.textContent  = stats.score;
+    streakDisplay.textContent = stats.streak;
     playedDisplay.textContent = stats.played;
   }
 
-  // ==========================================
-  // PUZZLE MANAGEMENT (Theme: Interoperability)
-  // ==========================================
+  // ══════════════════════════════════════════════════════════════
+  // PUZZLE MANAGEMENT
+  // ══════════════════════════════════════════════════════════════
+
   async function fetchNewPuzzle(offlineOnly = false) {
     showView(loadingView);
     hideAlert();
 
     try {
-      const url = `/api/puzzle/new${offlineOnly ? '?offline=true' : ''}`;
-      const res = await fetch(url);
+      const url  = `/api/puzzle/new${offlineOnly ? '?offline=true' : ''}`;
+      const res  = await fetch(url);
       const data = await res.json();
 
       if (!res.ok || !data.success) {
         throw new Error(data.details || data.error || 'Server returned an error');
       }
 
-      // Display question image
       puzzleImage.src = data.question;
-      puzzleSourceBadge.textContent = data.source === 'live-api'
-        ? 'Source: Live Banana API'
-        : (data.source === 'mirror-api' ? 'Source: Mirror Banana API' : 'Source: Offline Puzzle Pool');
-      
-      puzzleSourceBadge.style.color = data.source === 'offline-fallback' ? '#fbbf24' : '#10b981';
 
-      if (data.source === 'offline-fallback') {
+      if (data.source === 'live-api') {
+        puzzleSourceBadge.textContent = 'Source: Live API';
+        puzzleSourceBadge.style.color = '';
+      } else if (data.source === 'mirror-api') {
+        puzzleSourceBadge.textContent = 'Source: Mirror API';
+        puzzleSourceBadge.style.color = '#10b981';
+      } else {
+        puzzleSourceBadge.textContent = 'Source: Offline Pool';
+        puzzleSourceBadge.style.color = '#fbbf24';
         showAlert(data.message || 'Offline fallback mode active.', 'info');
       }
 
-      // Reset and focus input
       answerInput.value = '';
-      answerForm.style.display = 'block';
       submitAnswerBtn.disabled = false;
 
       updateStatsUI(data.stats);
@@ -188,11 +205,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ==========================================
-  // ANSWER SUBMISSION (Theme: Event-Driven Programming)
-  // ==========================================
+  // ══════════════════════════════════════════════════════════════
+  // ANSWER SUBMISSION
+  // ══════════════════════════════════════════════════════════════
+
   async function handleAnswerSubmit(userAnswer) {
-    if (userAnswer === undefined || userAnswer === null || String(userAnswer).trim() === '') {
+    if (userAnswer === undefined || String(userAnswer).trim() === '') {
       showAlert('Please enter an answer between 0 and 9', 'error');
       return;
     }
@@ -200,35 +218,30 @@ document.addEventListener('DOMContentLoaded', () => {
     submitAnswerBtn.disabled = true;
 
     try {
-      const res = await fetch('/api/puzzle/answer', {
+      const res  = await fetch('/api/puzzle/answer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answer: parseInt(userAnswer, 10) })
       });
-
       const data = await res.json();
 
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to check answer');
-      }
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to check answer');
 
-      // Update statistics
       updateStatsUI(data.stats);
 
-      // Populate Result View
-      resUserAns.textContent = data.userAnswer;
+      resUserAns.textContent  = data.userAnswer;
       resCorrectAns.textContent = data.solution;
       resultFeedback.textContent = data.feedback;
 
       if (data.correct) {
-        resultCard.className = 'result-card correct';
-        resultIcon.textContent = '🎉';
-        resultHeading.textContent = 'Awesome! Correct!';
+        resultCard.className    = 'result-card correct';
+        resultIcon.innerHTML    = '<i class="fa-solid fa-face-smile-beam" style="color:#10b981"></i>';
+        resultHeading.textContent = 'Correct!';
         resultHeading.style.color = '#10b981';
       } else {
-        resultCard.className = 'result-card incorrect';
-        resultIcon.textContent = '❌';
-        resultHeading.textContent = 'Oops! Not quite.';
+        resultCard.className    = 'result-card incorrect';
+        resultIcon.innerHTML    = '<i class="fa-solid fa-face-frown" style="color:#ef4444"></i>';
+        resultHeading.textContent = 'Not quite!';
         resultHeading.style.color = '#ef4444';
       }
 
@@ -241,15 +254,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ==========================================
-  // LEADERBOARD (Persistent High Scores)
-  // ==========================================
+  // ══════════════════════════════════════════════════════════════
+  // LEADERBOARD
+  // ══════════════════════════════════════════════════════════════
 
-  /**
-   * Fetch top scores from the server and render the leaderboard table.
-   * @param {string|null} currentUsername - highlight this player's row if present
-   */
-  async function loadLeaderboard(currentUsername = null) {
+  async function loadLeaderboard(highlightUsername = null) {
     leaderboardLoading.classList.remove('hidden');
     leaderboardEmpty.classList.add('hidden');
     leaderboardTable.classList.add('hidden');
@@ -266,19 +275,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Render rows
       leaderboardBody.innerHTML = '';
       data.scores.forEach((entry) => {
-        const isMe = currentUsername &&
-          entry.username.toLowerCase() === currentUsername.toLowerCase();
+        const isMe = highlightUsername &&
+          entry.username.toLowerCase() === highlightUsername.toLowerCase();
 
-        // Rank badge styling
+        let rankIcon = '';
         let rankClass = 'lb-rank-n';
-        if (entry.rank === 1) rankClass = 'lb-rank-1';
-        else if (entry.rank === 2) rankClass = 'lb-rank-2';
-        else if (entry.rank === 3) rankClass = 'lb-rank-3';
-
-        const medal = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : entry.rank;
+        if (entry.rank === 1) {
+          rankIcon = '<i class="fa-solid fa-trophy" style="color:#ffd700"></i>';
+          rankClass = 'lb-rank-1';
+        } else if (entry.rank === 2) {
+          rankIcon = '<i class="fa-solid fa-medal" style="color:#c0c0c0"></i>';
+          rankClass = 'lb-rank-2';
+        } else if (entry.rank === 3) {
+          rankIcon = '<i class="fa-solid fa-medal" style="color:#cd7f32"></i>';
+          rankClass = 'lb-rank-3';
+        } else {
+          rankIcon = entry.rank;
+        }
 
         const roleTag = entry.role === 'admin'
           ? `<span class="lb-role-badge lb-role-admin">Admin</span>`
@@ -288,10 +303,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isMe) tr.classList.add('lb-me');
 
         tr.innerHTML = `
-          <td><span class="lb-rank-badge ${rankClass}">${medal}</span></td>
-          <td>${escapeHtml(entry.username)}${roleTag}${isMe ? ' <strong style="color:var(--primary);font-size:0.72rem;">(You)</strong>' : ''}</td>
+          <td><span class="lb-rank-badge ${rankClass}">${rankIcon}</span></td>
+          <td>
+            ${escapeHtml(entry.username)}${roleTag}
+            ${isMe ? '<strong class="lb-you-tag">(You)</strong>' : ''}
+          </td>
           <td><span class="lb-score-val">${entry.score}</span></td>
-          <td><span class="lb-streak-val">🔥 ${entry.bestStreak}</span></td>
+          <td><span class="lb-streak-val"><i class="fa-solid fa-fire"></i> ${entry.bestStreak}</span></td>
           <td>${entry.played}</td>
         `;
         leaderboardBody.appendChild(tr);
@@ -299,48 +317,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
       leaderboardTable.classList.remove('hidden');
 
-      // Show player's rank in banner if available
       if (data.playerRank) {
-        myRankText.textContent = `You are currently ranked #${data.playerRank.rank} on the leaderboard!`;
+        myRankText.textContent = `You are ranked #${data.playerRank.rank} on the leaderboard!`;
         myRankBanner.classList.remove('hidden');
       }
     } catch (err) {
       leaderboardLoading.classList.add('hidden');
       leaderboardEmpty.classList.remove('hidden');
-      console.error('Leaderboard load error:', err);
+      console.error('Leaderboard error:', err);
     }
   }
 
-  /**
-   * Submit current session score to the persistent leaderboard.
-   */
   async function submitScore() {
     try {
       submitScoreBtn.disabled = true;
-      submitScoreBtn.textContent = '⏳ Submitting…';
+      submitScoreBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting&hellip;';
 
       const res  = await fetch('/api/leaderboard/submit', { method: 'POST' });
       const data = await res.json();
 
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to submit score');
-      }
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to submit score');
 
-      showAlert(`🏆 ${data.message}`, 'success');
-
-      // Refresh the leaderboard table with newly submitted data
-      const sessionRes  = await fetch('/api/session');
-      const sessionData = await sessionRes.json();
-      await loadLeaderboard(sessionData.user?.username);
+      showAlert(`${data.message}`, 'success');
+      await loadLeaderboard(currentUser?.username);
     } catch (err) {
       showAlert(err.message, 'error');
     } finally {
       submitScoreBtn.disabled = false;
-      submitScoreBtn.textContent = '🏆 Submit Score';
+      submitScoreBtn.innerHTML = '<i class="fa-solid fa-trophy"></i> Submit Score';
     }
   }
 
-  /** Escape HTML to prevent XSS in username display */
   function escapeHtml(str) {
     return String(str)
       .replace(/&/g, '&amp;')
@@ -349,171 +356,213 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/"/g, '&quot;');
   }
 
-  // ==========================================
-  // EVENT LISTENERS (Theme: Event-Driven Architecture)
-  // ==========================================
+  // ══════════════════════════════════════════════════════════════
+  // AUTH MODAL
+  // ══════════════════════════════════════════════════════════════
 
-  // 1. Start Game
-  startGameBtn.addEventListener('click', () => fetchNewPuzzle());
+  function openAuthModal() {
+    authModal.classList.remove('hidden');
+    loginUsername.focus();
+  }
 
-  // 2. Next Puzzle / New Puzzle
-  nextPuzzleBtn.addEventListener('click', () => fetchNewPuzzle());
-  newPuzzleBtn.addEventListener('click', () => fetchNewPuzzle());
+  function closeAuthModal() {
+    authModal.classList.add('hidden');
+  }
 
-  // 11. Submit Score to Leaderboard
-  submitScoreBtn.addEventListener('click', () => submitScore());
+  function switchTab(tabName) {
+    authTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+    loginForm.classList.toggle('hidden', tabName !== 'login');
+    registerForm.classList.toggle('hidden', tabName !== 'register');
+  }
 
-  // 12. Refresh Leaderboard
-  refreshLeaderboardBtn.addEventListener('click', async () => {
-    const sessionRes  = await fetch('/api/session');
-    const sessionData = await sessionRes.json();
-    loadLeaderboard(sessionData.user?.isLoggedIn ? sessionData.user.username : null);
+  // Tab click
+  authTabs.forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
 
-  // 3. Retry on Error
+  // Open / close auth modal
+  openAuthBtn.addEventListener('click', openAuthModal);
+  closeAuthModalBtn.addEventListener('click', closeAuthModal);
+  authModal.addEventListener('click', (e) => { if (e.target === authModal) closeAuthModal(); });
+
+  // ── Login submit ────────────────────────────────────────────
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = loginUsername.value.trim();
+    const password = loginPassword.value;
+
+    try {
+      const res  = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) throw new Error(data.error);
+
+      currentUser = data.user;
+      updateIdentityUI(data.user);
+      updateStatsUI(data.stats);
+      loginPassword.value = '';
+      closeAuthModal();
+
+      let msg = `Welcome back, ${data.user.username}!`;
+      if (data.previousBest !== null) {
+        msg += ` Your personal best: ${data.previousBest} pts (Rank #${data.rank}).`;
+      }
+      showAlert(msg, 'success');
+      await loadLeaderboard(data.user.username);
+    } catch (err) {
+      showAlert(err.message, 'error');
+    }
+  });
+
+  // ── Register submit ─────────────────────────────────────────
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = regUsername.value.trim();
+    const password = regPassword.value;
+    const confirm  = regPasswordConfirm.value;
+
+    if (password !== confirm) {
+      showAlert('Passwords do not match.', 'error');
+      return;
+    }
+
+    try {
+      const res  = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) throw new Error(data.error);
+
+      currentUser = data.user;
+      updateIdentityUI(data.user);
+      updateStatsUI(data.stats);
+      regPassword.value = '';
+      regPasswordConfirm.value = '';
+      closeAuthModal();
+      showAlert(`Account created! Welcome, ${data.user.username}!`, 'success');
+      await loadLeaderboard(data.user.username);
+    } catch (err) {
+      showAlert(err.message, 'error');
+    }
+  });
+
+  // ── Logout ──────────────────────────────────────────────────
+  logoutHeaderBtn.addEventListener('click', async () => {
+    try {
+      const res  = await fetch('/api/auth/logout', { method: 'POST' });
+      const data = await res.json();
+
+      currentUser = null;
+      updateIdentityUI(data.user);
+      updateStatsUI({ score: 0, streak: 0, played: 0 });
+      showAlert('Logged out successfully.', 'info');
+      showView(startScreen);
+      await loadLeaderboard(null);
+    } catch (err) {
+      showAlert('Logout failed.', 'error');
+    }
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // EVENT LISTENERS
+  // ══════════════════════════════════════════════════════════════
+
+  // Game controls
+  startGameBtn.addEventListener('click', () => fetchNewPuzzle());
+  nextPuzzleBtn.addEventListener('click', () => fetchNewPuzzle());
+  newPuzzleBtn.addEventListener('click', () => fetchNewPuzzle());
   retryApiBtn.addEventListener('click', () => fetchNewPuzzle(false));
   loadOfflineBtn.addEventListener('click', () => fetchNewPuzzle(true));
 
-  // 4. Form Submit
+  // Answer form
   answerForm.addEventListener('submit', (e) => {
     e.preventDefault();
     handleAnswerSubmit(answerInput.value);
   });
 
-  // 5. Quick Numpad Buttons (0-9)
+  // Quick numpad
   quickNumpad.addEventListener('click', (e) => {
     const btn = e.target.closest('.numpad-btn');
     if (btn) {
-      const val = btn.dataset.val;
-      answerInput.value = val;
-      handleAnswerSubmit(val);
+      answerInput.value = btn.dataset.val;
+      handleAnswerSubmit(btn.dataset.val);
     }
   });
 
-  // 6. Keyboard Shortcuts (0-9 to input, Enter to submit)
+  // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
-    // If inside active puzzle view and typing a digit
-    if (!activePuzzleView.classList.contains('hidden') && !identityModal.classList.contains('hidden') === false) {
-      if (e.key >= '0' && e.key <= '9') {
+    // Only intercept digit keys when the answer input is NOT already focused
+    // (prevents double-entry: once from JS and once from browser's native input handling)
+    if (!activePuzzleView.classList.contains('hidden') && authModal.classList.contains('hidden')) {
+      if (e.key >= '0' && e.key <= '9' && document.activeElement !== answerInput) {
         answerInput.value = e.key;
+        answerInput.focus();
       }
     }
-    // Enter key on result view triggers next puzzle
-    if (!resultView.classList.contains('hidden') && e.key === 'Enter') {
-      fetchNewPuzzle();
-    }
+    if (!resultView.classList.contains('hidden') && e.key === 'Enter') fetchNewPuzzle();
   });
 
-  // 7. Reset Game Session
+  // Reset session
   resetSessionBtn.addEventListener('click', async () => {
-    if (confirm('Are you sure you want to reset your score and stats for this session?')) {
+    if (confirm('Reset your score and stats for this session?')) {
       try {
-        const res = await fetch('/api/session/reset', { method: 'POST' });
+        const res  = await fetch('/api/session/reset', { method: 'POST' });
         const data = await res.json();
         updateStatsUI(data.stats);
-        showAlert('Game session has been reset.', 'info');
+        showAlert('Session reset.', 'info');
         showView(startScreen);
-      } catch (err) {
+      } catch {
         showAlert('Failed to reset session.', 'error');
       }
     }
   });
 
-  // 8. Toggle API Failure Simulation (For tutor presentation / rubric evidence)
+  // Submit score
+  submitScoreBtn.addEventListener('click', () => submitScore());
+
+  // Refresh leaderboard
+  refreshLeaderboardBtn.addEventListener('click', () => loadLeaderboard(currentUser?.username));
+
+  // API failure toggle
   toggleApiSimBtn.addEventListener('click', async () => {
     try {
       isSimulatingFailure = !isSimulatingFailure;
-      const res = await fetch('/api/admin/toggle-failure', {
+      const res  = await fetch('/api/admin/toggle-failure', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ simulate: isSimulatingFailure })
       });
       const data = await res.json();
 
-      simFailureStatus.textContent = isSimulatingFailure ? 'ON (ACTIVE)' : 'OFF';
-      toggleApiSimBtn.style.color = isSimulatingFailure ? '#ef4444' : 'inherit';
+      simFailureStatus.textContent = isSimulatingFailure ? 'ON' : 'OFF';
+      toggleApiSimBtn.style.color  = isSimulatingFailure ? '#ef4444' : '';
       showAlert(data.message, isSimulatingFailure ? 'error' : 'success');
     } catch (err) {
       console.error(err);
     }
   });
 
-  // 9. Identity Modal controls
-  identityModalBtn.addEventListener('click', () => {
-    identityModal.classList.remove('hidden');
-    usernameInput.focus();
-  });
+  // Architecture modal
+  archInfoBtn.addEventListener('click', () => archModal.classList.remove('hidden'));
+  closeArchModalBtn.addEventListener('click', () => archModal.classList.add('hidden'));
+  archModal.addEventListener('click', (e) => { if (e.target === archModal) archModal.classList.add('hidden'); });
 
-  closeIdentityModalBtn.addEventListener('click', () => {
-    identityModal.classList.add('hidden');
-  });
-
-  identityModal.addEventListener('click', (e) => {
-    if (e.target === identityModal) {
-      identityModal.classList.add('hidden');
-    }
-  });
-
-  identityForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = usernameInput.value.trim();
-    const role = userRoleSelect.value;
-
-    try {
-      const res = await fetch('/api/session/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, role })
-      });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error);
-
-      updateIdentityUI(data.user);
-      updateStatsUI(data.stats);
-      identityModal.classList.add('hidden');
-      showAlert(`Identity updated: ${data.user.username} (${data.user.role})`, 'success');
-      // Refresh leaderboard to highlight this player's existing entry if any
-      loadLeaderboard(data.user.username);
-    } catch (err) {
-      showAlert(err.message, 'error');
-    }
-  });
-
-  logoutBtn.addEventListener('click', async () => {
-    try {
-      const res = await fetch('/api/session/logout', { method: 'POST' });
-      const data = await res.json();
-      updateIdentityUI(data.user);
-      updateStatsUI({ score: 0, streak: 0, played: 0 });
-      identityModal.classList.add('hidden');
-      showAlert('Logged out. Reverted to Guest.', 'info');
-      showView(startScreen);
-    } catch (err) {
-      showAlert('Logout failed.', 'error');
-    }
-  });
-
-  // 10. Architecture Guide Modal
-  archInfoBtn.addEventListener('click', () => {
-    archModal.classList.remove('hidden');
-  });
-
-  closeArchModalBtn.addEventListener('click', () => {
-    archModal.classList.add('hidden');
-  });
-
-  archModal.addEventListener('click', (e) => {
-    if (e.target === archModal) {
-      archModal.classList.add('hidden');
-    }
-  });
-
+  // Alert close
   alertCloseBtn.addEventListener('click', hideAlert);
 
-  // Initialize: load session info AND the leaderboard on page load
+  // ══════════════════════════════════════════════════════════════
+  // INIT
+  // ══════════════════════════════════════════════════════════════
   loadSession().then((sessionData) => {
     const username = sessionData?.user?.isLoggedIn ? sessionData.user.username : null;
     loadLeaderboard(username);
   });
+
 });

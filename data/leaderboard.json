@@ -1,6 +1,16 @@
 {
   "scores": [
     {
+      "username": "ram lal",
+      "role": "player",
+      "score": 40,
+      "played": 9,
+      "bestStreak": 1,
+      "lastPlayed": "2026-10-29T08:16:18.995Z",
+      "firstPlayed": "2026-10-29T08:16:18.995Z",
+      "gamesSubmitted": 1
+    },
+    {
       "username": "nis",
       "role": "player",
       "score": 10,

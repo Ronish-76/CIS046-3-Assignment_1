@@ -12,6 +12,7 @@ const session    = require('express-session');
 const path       = require('path');
 const bananaService    = require('./banana.service');
 const leaderboardSvc   = require('./leaderboard.service');
+const authSvc          = require('./auth.service');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,7 +43,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use((req, res, next) => {
   if (!req.session.user) {
     req.session.user = {
-      username: 'Guest Explorer',
+      username: 'Guest',
       role: 'guest',
       isLoggedIn: false
     };
@@ -54,6 +55,86 @@ app.use((req, res, next) => {
     req.session.history = [];
   }
   next();
+});
+
+// ==========================================
+// 0. AUTH ROUTES (Registration & Login)
+// ==========================================
+
+/**
+ * POST /api/auth/register
+ * Create a new player account. Auto-logs in on success.
+ */
+app.post('/api/auth/register', (req, res) => {
+  const { username, password, role } = req.body;
+  try {
+    const user = authSvc.register(username, password, role);
+
+    // Auto-login after registration
+    req.session.user = { ...user, isLoggedIn: true, loginTime: new Date().toISOString() };
+    req.session.score   = 0;
+    req.session.streak  = 0;
+    req.session.played  = 0;
+    req.session.history = [];
+
+    res.json({
+      success: true,
+      message: `Account created! Welcome, ${user.username}!`,
+      user: req.session.user,
+      stats: { score: 0, streak: 0, played: 0 }
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/auth/login
+ * Authenticate an existing player. Preserves any existing session stats on
+ * same-username continuation; resets stats for a fresh login.
+ */
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = authSvc.login(username, password);
+
+    // Reset stats for this session (previous high score already in leaderboard)
+    req.session.user = { ...user, isLoggedIn: true, loginTime: new Date().toISOString() };
+    req.session.score   = 0;
+    req.session.streak  = 0;
+    req.session.played  = 0;
+    req.session.currentSolution = undefined;
+    req.session.currentQuestion = undefined;
+
+    // Fetch the player's existing leaderboard entry so the UI can show it
+    const playerRank = leaderboardSvc.getPlayerRank(user.username);
+
+    res.json({
+      success: true,
+      message: `Welcome back, ${user.username}!`,
+      user: req.session.user,
+      stats: { score: 0, streak: 0, played: 0 },
+      previousBest: playerRank ? playerRank.entry.score : null,
+      rank: playerRank ? playerRank.rank : null
+    });
+  } catch (err) {
+    res.status(401).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/auth/logout
+ * End the current authenticated session.
+ */
+app.post('/api/auth/logout', (req, res) => {
+  req.session.user = { username: 'Guest', role: 'guest', isLoggedIn: false };
+  req.session.score   = 0;
+  req.session.streak  = 0;
+  req.session.played  = 0;
+  req.session.currentSolution = undefined;
+  req.session.currentQuestion = undefined;
+
+  res.json({ success: true, message: 'Logged out successfully.', user: req.session.user });
 });
 
 // ==========================================

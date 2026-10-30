@@ -93,7 +93,7 @@ npm start
 ### 4. Play the Game
 Open your web browser and navigate to:
 ```
-http://localhost:3000
+http://localhost:3000 
 ```
 
 ---

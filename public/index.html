@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Banana Puzzle Challenge - Distributed Interactive Game built for CIS046-3 Software for Enterprise">
-  <title>🍌 Banana Puzzle Game | Distributed Architecture</title>
+  <meta name="description" content="Banana Puzzle Challenge - Interactive Distributed Game">
+  <title>Banana Puzzle Challenge</title>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 Free -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,130 +25,138 @@
         <div class="brand-icon">🍌</div>
         <div class="brand-text">
           <h1>Banana Puzzle Challenge</h1>
-          <p class="subtitle">CIS046-3 Software for Enterprise • Distributed Web Application</p>
         </div>
       </div>
 
-      <!-- Virtual Identity Card -->
+      <!-- Auth / User Panel -->
       <div class="identity-panel" id="identityPanel">
         <div class="user-badge">
-          <span class="user-avatar" id="userAvatar">👤</span>
+          <span class="user-avatar" id="userAvatar"><i class="fa-solid fa-user"></i></span>
           <div class="user-info">
-            <span class="user-name" id="userNameDisplay">Guest Explorer</span>
-            <span class="user-role badge-guest" id="userRoleBadge">Guest</span>
+            <span class="user-name" id="userNameDisplay">Guest</span>
+            <span class="user-role badge-guest" id="userRoleBadge">Not logged in</span>
           </div>
         </div>
-        <button id="identityModalBtn" class="btn btn-secondary btn-sm" aria-label="Change Virtual Identity">
-          Change Identity
+        <!-- Shown when NOT logged in -->
+        <button id="openAuthBtn" class="btn btn-secondary btn-sm">
+          <i class="fa-solid fa-right-to-bracket"></i> Login
+        </button>
+        <!-- Shown when logged in -->
+        <button id="logoutHeaderBtn" class="btn btn-ghost btn-sm hidden">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
         </button>
       </div>
     </header>
 
-    <!-- System & Architecture Information Ribbon -->
+    <!-- System Ribbon -->
     <div class="system-ribbon">
       <div class="ribbon-item">
         <span class="status-dot dot-active"></span>
-        <span>Architecture: <strong>Distributed REST (Client ↔ Node Express ↔ Banana API)</strong></span>
+        <span>Architecture: <strong>Distributed REST (Client &harr; Node/Express &harr; Banana API)</strong></span>
       </div>
       <div class="ribbon-item">
         <span class="badge-pill" id="apiStatusBadge">API Connected</span>
       </div>
       <div class="ribbon-actions">
-        <button id="toggleApiSimBtn" class="btn btn-ghost btn-xs" title="Simulate external Banana API failure to demonstrate error handling">
-          ⚡ Simulate API Failure: <span id="simFailureStatus">OFF</span>
+        <button id="toggleApiSimBtn" class="btn btn-ghost btn-xs" title="Simulate external Banana API failure">
+          <i class="fa-solid fa-bolt"></i> Simulate API Failure: <span id="simFailureStatus">OFF</span>
         </button>
       </div>
     </div>
 
-    <!-- Main Game Card -->
+    <!-- Main Game Area -->
     <main class="game-dashboard">
       <!-- Stats Bar -->
       <section class="stats-grid">
         <div class="stat-card">
-          <span class="stat-label">Total Score</span>
+          <span class="stat-label"><i class="fa-solid fa-star"></i> Total Score</span>
           <span class="stat-value" id="scoreDisplay">0</span>
           <span class="stat-hint">+10 per correct answer</span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Current Streak</span>
-          <span class="stat-value streak-value" id="streakDisplay">🔥 0</span>
+          <span class="stat-label"><i class="fa-solid fa-fire"></i> Streak</span>
+          <span class="stat-value streak-value" id="streakDisplay">0</span>
           <span class="stat-hint">Consecutive correct</span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Puzzles Played</span>
+          <span class="stat-label"><i class="fa-solid fa-gamepad"></i> Played</span>
           <span class="stat-value" id="playedDisplay">0</span>
-          <span class="stat-hint">Active session count</span>
+          <span class="stat-hint">This session</span>
         </div>
       </section>
 
-      <!-- Puzzle Stage Area -->
+      <!-- Puzzle Stage -->
       <section class="puzzle-stage" id="puzzleStage">
-        <!-- Notification / Alert Banner -->
+        <!-- Alert Banner -->
         <div id="alertBanner" class="alert-banner hidden" role="alert">
-          <span class="alert-icon" id="alertIcon">ℹ️</span>
+          <span class="alert-icon" id="alertIcon"></span>
           <span class="alert-text" id="alertMessage">Message</span>
-          <button id="alertCloseBtn" class="alert-close" aria-label="Close message">&times;</button>
+          <button id="alertCloseBtn" class="alert-close" aria-label="Close message">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
 
-        <!-- Puzzle Display Box -->
+        <!-- Puzzle Display -->
         <div class="puzzle-view-container">
-          <!-- Initial Welcome / Start Screen -->
+          <!-- Start Screen -->
           <div id="startScreen" class="screen-view active-view">
             <div class="welcome-card">
-              <div class="welcome-emoji">🧩</div>
-              <h2>Ready to test your math and logic?</h2>
+              <div class="welcome-emoji">
+                <i class="fa-solid fa-puzzle-piece"></i>
+              </div>
+              <h2>Ready to test your logic?</h2>
               <p>
-                Each puzzle features symbols and bananas representing numbers.
-                Calculate the value for the question mark (<strong>0 - 9</strong>) and submit your answer!
+                Each puzzle shows symbols and bananas representing numbers.
+                Find the value of the question mark (<strong>0&ndash;9</strong>) and submit your answer!
               </p>
               <button id="startGameBtn" class="btn btn-primary btn-lg">
-                🚀 Start Game & Load Puzzle
+                <i class="fa-solid fa-play"></i> Start Game
               </button>
             </div>
           </div>
 
-          <!-- Loading Spinner View -->
+          <!-- Loading View -->
           <div id="loadingView" class="screen-view hidden">
             <div class="loader-spinner"></div>
-            <p class="loading-text">Fetching puzzle from Banana API service...</p>
+            <p class="loading-text">Fetching puzzle from Banana API&hellip;</p>
             <span class="loading-subtext">Communicating via server-side HTTP proxy</span>
           </div>
 
           <!-- Active Puzzle View -->
           <div id="activePuzzleView" class="screen-view hidden">
             <div class="image-wrapper">
-              <img id="puzzleImage" src="" alt="Banana Logic Puzzle Question" class="puzzle-image">
+              <img id="puzzleImage" src="" alt="Banana Logic Puzzle" class="puzzle-image">
             </div>
 
             <div class="puzzle-meta">
-              <span id="puzzleSourceBadge" class="source-tag">Source: Live Banana API</span>
-              <span class="security-note">🔒 Solution securely verified on server session</span>
+              <span id="puzzleSourceBadge" class="source-tag">Source: Live API</span>
+              <span class="security-note">
+                <i class="fa-solid fa-lock"></i> Solution verified server-side
+              </span>
             </div>
 
-            <!-- Answer Submission Form -->
+            <!-- Answer Form -->
             <form id="answerForm" class="answer-form">
               <div class="input-group">
-                <label for="answerInput" class="input-label">Your Solution (0-9):</label>
+                <label for="answerInput" class="input-label">Your Answer (0&ndash;9):</label>
                 <div class="input-row">
                   <input
                     type="number"
                     id="answerInput"
                     name="answer"
-                    min="0"
-                    max="9"
-                    step="1"
-                    placeholder="Enter single digit (0-9)"
+                    min="0" max="9" step="1"
+                    placeholder="0–9"
                     required
                     autocomplete="off"
                   >
                   <button type="submit" id="submitAnswerBtn" class="btn btn-primary">
-                    Check Answer
+                    <i class="fa-solid fa-circle-check"></i> Check
                   </button>
                 </div>
               </div>
             </form>
 
-            <!-- Quick Number Pad (Event-Driven input helper) -->
+            <!-- Quick Numpad -->
             <div class="quick-numpad" id="quickNumpad">
               <span class="numpad-title">Quick Select:</span>
               <div class="numpad-grid">
@@ -164,13 +174,13 @@
             </div>
           </div>
 
-          <!-- Result & Feedback View -->
+          <!-- Result View -->
           <div id="resultView" class="screen-view hidden">
             <div class="result-card" id="resultCard">
-              <div class="result-icon" id="resultIcon">🎉</div>
+              <div class="result-icon" id="resultIcon"></div>
               <h2 id="resultHeading">Correct!</h2>
               <p id="resultFeedback" class="result-description">You earned 10 points!</p>
-              
+
               <div class="result-details">
                 <div class="detail-pill">Your Answer: <strong id="resUserAns">-</strong></div>
                 <div class="detail-pill">Solution: <strong id="resCorrectAns">-</strong></div>
@@ -178,21 +188,27 @@
 
               <div class="result-actions">
                 <button id="nextPuzzleBtn" class="btn btn-primary btn-lg">
-                  Next Puzzle ➡️
+                  Next Puzzle <i class="fa-solid fa-arrow-right"></i>
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- Error / Fallback View -->
+          <!-- Error View -->
           <div id="errorView" class="screen-view hidden">
             <div class="error-card">
-              <div class="error-emoji">⚠️</div>
+              <div class="error-emoji">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
               <h3 id="errorHeading">API Connection Error</h3>
               <p id="errorMessageText">Unable to reach the Banana API server.</p>
               <div class="error-actions">
-                <button id="retryApiBtn" class="btn btn-primary">🔄 Retry Connection</button>
-                <button id="loadOfflineBtn" class="btn btn-secondary">📦 Load Offline Puzzle</button>
+                <button id="retryApiBtn" class="btn btn-primary">
+                  <i class="fa-solid fa-rotate-right"></i> Retry
+                </button>
+                <button id="loadOfflineBtn" class="btn btn-secondary">
+                  <i class="fa-solid fa-box-archive"></i> Load Offline Puzzle
+                </button>
               </div>
             </div>
           </div>
@@ -201,48 +217,46 @@
         <!-- Controls Footer -->
         <div class="stage-footer">
           <button id="newPuzzleBtn" class="btn btn-secondary" title="Fetch a new puzzle">
-            🔄 New Puzzle
+            <i class="fa-solid fa-rotate-right"></i> New Puzzle
           </button>
-          <button id="submitScoreBtn" class="btn btn-primary" title="Save your score to the leaderboard">
-            🏆 Submit Score
+          <button id="submitScoreBtn" class="btn btn-primary" title="Save score to leaderboard">
+            <i class="fa-solid fa-trophy"></i> Submit Score
           </button>
-          <button id="resetSessionBtn" class="btn btn-ghost" title="Reset current game score and stats">
-            🧹 Reset Game Session
+          <button id="resetSessionBtn" class="btn btn-ghost" title="Reset current game stats">
+            <i class="fa-solid fa-trash-can"></i> Reset Session
           </button>
-          <button id="archInfoBtn" class="btn btn-ghost" title="View Distributed Architecture Details">
-            ℹ️ Architecture Guide
+          <button id="archInfoBtn" class="btn btn-ghost" title="Architecture details">
+            <i class="fa-solid fa-circle-info"></i> Architecture
           </button>
         </div>
       </section>
 
-      <!-- ── Leaderboard Section ── -->
+      <!-- Leaderboard Section -->
       <section class="leaderboard-section" id="leaderboardSection">
         <div class="leaderboard-header">
-          <h2 class="leaderboard-title">🏆 Top Players Leaderboard</h2>
-          <button id="refreshLeaderboardBtn" class="btn btn-ghost btn-sm" title="Refresh leaderboard">
-            🔄 Refresh
+          <h2 class="leaderboard-title">
+            <i class="fa-solid fa-trophy"></i> Top Players
+          </h2>
+          <button id="refreshLeaderboardBtn" class="btn btn-ghost btn-sm" title="Refresh">
+            <i class="fa-solid fa-rotate-right"></i> Refresh
           </button>
         </div>
 
-        <!-- Player's own rank summary (shown if on leaderboard) -->
         <div id="myRankBanner" class="my-rank-banner hidden">
-          <span id="myRankText">You are ranked #1</span>
+          <i class="fa-solid fa-medal"></i> <span id="myRankText">You are ranked #1</span>
         </div>
 
-        <!-- Loading state -->
         <div id="leaderboardLoading" class="lb-loading">
           <div class="lb-spinner"></div>
-          <span>Loading leaderboard…</span>
+          <span>Loading leaderboard&hellip;</span>
         </div>
 
-        <!-- Empty state -->
         <div id="leaderboardEmpty" class="lb-empty hidden">
-          <span class="lb-empty-icon">🎮</span>
+          <span class="lb-empty-icon"><i class="fa-solid fa-gamepad"></i></span>
           <p>No scores yet — be the first to submit!</p>
-          <p class="lb-empty-hint">Set your player name, play some puzzles, then click <strong>🏆 Submit Score</strong>.</p>
+          <p class="lb-empty-hint">Login, play some puzzles, then click <strong>Submit Score</strong>.</p>
         </div>
 
-        <!-- Scores table -->
         <div id="leaderboardTable" class="lb-table-wrap hidden">
           <table class="lb-table">
             <thead>
@@ -260,71 +274,103 @@
       </section>
     </main>
 
-    <!-- Architecture Modal (For tutor demonstration & assignment evidence) -->
-    <div id="archModal" class="modal-backdrop hidden">
-      <div class="modal-content modal-lg">
-        <div class="modal-header">
-          <h3>📐 Distributed Architecture & Theme Mapping</h3>
-          <button id="closeArchModalBtn" class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="arch-themes-grid">
-            <div class="theme-box">
-              <h4>1. Version Control (Git)</h4>
-              <p>Repository initialized on Day 1. Granular, meaningful commits documenting architecture, API service, UI, and event flows.</p>
-            </div>
-            <div class="theme-box">
-              <h4>2. Interoperability</h4>
-              <p>Node.js backend consumes Marc Conrad's external Banana API (REST/HTTP). Features live API calls, secondary mirror, timeouts, and fallback handling.</p>
-            </div>
-            <div class="theme-box">
-              <h4>3. Event-Driven Programming</h4>
-              <p>DOM listeners handle clicks, form submits, keyboard inputs, quick-pads, and asynchronous state transitions dynamically without page reloads.</p>
-            </div>
-            <div class="theme-box">
-              <h4>4. Virtual Identity</h4>
-              <p>HttpOnly session cookies maintain player identity, authorization role, scores, and server-side puzzle solution state securely.</p>
-            </div>
-          </div>
-          <div class="arch-flow-diagram">
-            <h4>Data Flow Architecture:</h4>
-            <code>[Browser Client] ➔ (HTTP JSON) ➔ [Node.js / Express Server] ➔ (HTTP REST) ➔ [Remote Banana API]</code>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Virtual Identity Modal -->
-    <div id="identityModal" class="modal-backdrop hidden">
+    <!-- ── AUTH MODAL (Login / Register) ── -->
+    <div id="authModal" class="modal-backdrop hidden">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>👤 Manage Virtual Identity</h3>
-          <button id="closeIdentityModalBtn" class="modal-close">&times;</button>
+          <h3><i class="fa-solid fa-user-shield"></i> Player Account</h3>
+          <button id="closeAuthModalBtn" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <form id="identityForm" class="modal-body">
-          <p class="modal-desc">Establish your authenticated player identity or test role-based access.</p>
+
+        <!-- Tabs -->
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">
+            <i class="fa-solid fa-right-to-bracket"></i> Login
+          </button>
+          <button class="auth-tab" data-tab="register">
+            <i class="fa-solid fa-user-plus"></i> Register
+          </button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="modal-body auth-panel">
+          <p class="modal-desc">Sign in to track your high score on the leaderboard.</p>
           <div class="form-field">
-            <label for="usernameInput">Display / Student Name:</label>
-            <input type="text" id="usernameInput" placeholder="e.g. Ronish M." required>
+            <label for="loginUsername"><i class="fa-solid fa-user"></i> Username</label>
+            <input type="text" id="loginUsername" placeholder="Your username" autocomplete="username" required>
           </div>
           <div class="form-field">
-            <label for="userRoleSelect">Role:</label>
-            <select id="userRoleSelect">
-              <option value="player">Player / Student</option>
-              <option value="admin">Admin / Tutor</option>
-            </select>
+            <label for="loginPassword"><i class="fa-solid fa-lock"></i> Password</label>
+            <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password" required>
           </div>
           <div class="modal-actions">
-            <button type="button" id="logoutBtn" class="btn btn-ghost">Log Out (Reset to Guest)</button>
-            <button type="submit" class="btn btn-primary">Save Identity</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-right-to-bracket"></i> Login
+            </button>
+          </div>
+        </form>
+
+        <!-- Register Form -->
+        <form id="registerForm" class="modal-body auth-panel hidden">
+          <p class="modal-desc">Create an account to compete on the leaderboard.</p>
+          <div class="form-field">
+            <label for="regUsername"><i class="fa-solid fa-user"></i> Username</label>
+            <input type="text" id="regUsername" placeholder="Choose a username (2–30 chars)" autocomplete="username" required>
+          </div>
+          <div class="form-field">
+            <label for="regPassword"><i class="fa-solid fa-lock"></i> Password</label>
+            <input type="password" id="regPassword" placeholder="Min. 4 characters" autocomplete="new-password" required>
+          </div>
+          <div class="form-field">
+            <label for="regPasswordConfirm"><i class="fa-solid fa-lock"></i> Confirm Password</label>
+            <input type="password" id="regPasswordConfirm" placeholder="Repeat password" autocomplete="new-password" required>
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-user-plus"></i> Create Account
+            </button>
           </div>
         </form>
       </div>
     </div>
 
+    <!-- ── ARCHITECTURE MODAL ── -->
+    <div id="archModal" class="modal-backdrop hidden">
+      <div class="modal-content modal-lg">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-diagram-project"></i> Distributed Architecture &amp; Theme Mapping</h3>
+          <button id="closeArchModalBtn" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="arch-themes-grid">
+            <div class="theme-box">
+              <h4><i class="fa-solid fa-code-branch"></i> 1. Version Control</h4>
+              <p>Repository initialized on Day 1. Granular commits track architecture, API service, UI and event flows.</p>
+            </div>
+            <div class="theme-box">
+              <h4><i class="fa-solid fa-network-wired"></i> 2. Interoperability</h4>
+              <p>Node.js backend consumes Marc Conrad's external Banana API (REST/HTTP) with mirror failover and offline fallback.</p>
+            </div>
+            <div class="theme-box">
+              <h4><i class="fa-solid fa-bolt"></i> 3. Event-Driven Programming</h4>
+              <p>DOM listeners handle clicks, form submits, keyboard inputs and async state transitions without page reloads.</p>
+            </div>
+            <div class="theme-box">
+              <h4><i class="fa-solid fa-id-card"></i> 4. Virtual Identity</h4>
+              <p>HttpOnly session cookies maintain player identity, role, scores and server-side puzzle solutions securely.</p>
+            </div>
+          </div>
+          <div class="arch-flow-diagram">
+            <h4>Data Flow:</h4>
+            <code>[Browser] &rarr; (JSON) &rarr; [Node.js/Express] &rarr; (REST) &rarr; [Banana API]</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Footer -->
     <footer class="app-footer">
-      <p>CIS046-3 Software for Enterprise • Individual Assignment 1 • Demonstration App</p>
+      <p>Banana Puzzle Challenge</p>
     </footer>
   </div>
 
