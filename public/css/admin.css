@@ -1,0 +1,54 @@
+/**
+ * Admin Dashboard Styling — Dense Data Tables
+ */
+
+.admin-header-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+}
+
+.admin-stats-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.dense-table th, .dense-table td {
+  padding: 8px 12px;
+  font-size: 0.82rem;
+}
+
+.admin-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 24px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.failure-toggle-box {
+  background: #000;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+@media (max-width: 680px) {
+  .admin-stats-summary {
+    grid-template-columns: 1fr;
+  }
+}
+

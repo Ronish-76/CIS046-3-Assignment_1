@@ -60,21 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const alertMessage  = document.getElementById('alertMessage');
   const alertCloseBtn = document.getElementById('alertCloseBtn');
 
-  // ── Auth Modal ────────────────────────────────────────────────
-  const authModal         = document.getElementById('authModal');
-  const closeAuthModalBtn = document.getElementById('closeAuthModalBtn');
-  const authTabs          = document.querySelectorAll('.auth-tab');
-  const loginForm         = document.getElementById('loginForm');
-  const registerForm      = document.getElementById('registerForm');
-  const loginUsername     = document.getElementById('loginUsername');
-  const loginPassword     = document.getElementById('loginPassword');
-  const regUsername       = document.getElementById('regUsername');
-  const regPassword       = document.getElementById('regPassword');
-  const regPasswordConfirm = document.getElementById('regPasswordConfirm');
-
   // ── Architecture Modal ────────────────────────────────────────
-  const archModal        = document.getElementById('archModal');
-  const archInfoBtn      = document.getElementById('archInfoBtn');
+  const archModal         = document.getElementById('archModal');
+  const archInfoBtn       = document.getElementById('archInfoBtn');
   const closeArchModalBtn = document.getElementById('closeArchModalBtn');
 
   // ── Leaderboard ───────────────────────────────────────────────
@@ -87,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const myRankText            = document.getElementById('myRankText');
 
   let isSimulatingFailure = false;
-  let currentUser = null; // tracks logged-in user client-side
+  let currentUser = null;
 
   // ══════════════════════════════════════════════════════════════
   // VIEW HELPERS
@@ -356,115 +344,16 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/"/g, '&quot;');
   }
 
-  // ══════════════════════════════════════════════════════════════
-  // AUTH MODAL
-  // ══════════════════════════════════════════════════════════════
-
-  function openAuthModal() {
-    authModal.classList.remove('hidden');
-    loginUsername.focus();
-  }
-
-  function closeAuthModal() {
-    authModal.classList.add('hidden');
-  }
-
-  function switchTab(tabName) {
-    authTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
-    loginForm.classList.toggle('hidden', tabName !== 'login');
-    registerForm.classList.toggle('hidden', tabName !== 'register');
-  }
-
-  // Tab click
-  authTabs.forEach(tab => {
-    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
-  });
-
-  // Open / close auth modal
-  openAuthBtn.addEventListener('click', openAuthModal);
-  closeAuthModalBtn.addEventListener('click', closeAuthModal);
-  authModal.addEventListener('click', (e) => { if (e.target === authModal) closeAuthModal(); });
-
-  // ── Login submit ────────────────────────────────────────────
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = loginUsername.value.trim();
-    const password = loginPassword.value;
-
-    try {
-      const res  = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-
-      if (!res.ok || !data.success) throw new Error(data.error);
-
-      currentUser = data.user;
-      updateIdentityUI(data.user);
-      updateStatsUI(data.stats);
-      loginPassword.value = '';
-      closeAuthModal();
-
-      let msg = `Welcome back, ${data.user.username}!`;
-      if (data.previousBest !== null) {
-        msg += ` Your personal best: ${data.previousBest} pts (Rank #${data.rank}).`;
-      }
-      showAlert(msg, 'success');
-      await loadLeaderboard(data.user.username);
-    } catch (err) {
-      showAlert(err.message, 'error');
-    }
-  });
-
-  // ── Register submit ─────────────────────────────────────────
-  registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = regUsername.value.trim();
-    const password = regPassword.value;
-    const confirm  = regPasswordConfirm.value;
-
-    if (password !== confirm) {
-      showAlert('Passwords do not match.', 'error');
-      return;
-    }
-
-    try {
-      const res  = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-
-      if (!res.ok || !data.success) throw new Error(data.error);
-
-      currentUser = data.user;
-      updateIdentityUI(data.user);
-      updateStatsUI(data.stats);
-      regPassword.value = '';
-      regPasswordConfirm.value = '';
-      closeAuthModal();
-      showAlert(`Account created! Welcome, ${data.user.username}!`, 'success');
-      await loadLeaderboard(data.user.username);
-    } catch (err) {
-      showAlert(err.message, 'error');
-    }
+  // ── Open Login Page button (shown when not logged in) ──────────
+  openAuthBtn.addEventListener('click', () => {
+    window.location.href = '/login.html';
   });
 
   // ── Logout ──────────────────────────────────────────────────
   logoutHeaderBtn.addEventListener('click', async () => {
     try {
-      const res  = await fetch('/api/auth/logout', { method: 'POST' });
-      const data = await res.json();
-
-      currentUser = null;
-      updateIdentityUI(data.user);
-      updateStatsUI({ score: 0, streak: 0, played: 0 });
-      showAlert('Logged out successfully.', 'info');
-      showView(startScreen);
-      await loadLeaderboard(null);
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.replace('/login.html');
     } catch (err) {
       showAlert('Logout failed.', 'error');
     }
@@ -560,9 +449,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // ══════════════════════════════════════════════════════════════
   // INIT
   // ══════════════════════════════════════════════════════════════
-  loadSession().then((sessionData) => {
-    const username = sessionData?.user?.isLoggedIn ? sessionData.user.username : null;
-    loadLeaderboard(username);
-  });
+  // Auth guard: if not logged in, redirect to login page
+  fetch('/api/auth/me')
+    .then(r => {
+      if (r.status === 401) {
+        window.location.replace('/login.html');
+        return null;
+      }
+      return r.json();
+    })
+    .then(data => {
+      if (!data) return;
+      currentUser = data.user;
+      updateIdentityUI(data.user);
+      updateStatsUI(data.stats);
+      loadLeaderboard(data.user?.username);
+    })
+    .catch(() => window.location.replace('/login.html'));
 
 });

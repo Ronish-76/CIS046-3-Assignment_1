@@ -3,377 +3,241 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Banana Puzzle Challenge - Interactive Distributed Game">
   <title>Banana Puzzle Challenge</title>
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <!-- Font Awesome 6 Free -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
-  <!-- Background Glow Accents -->
-  <div class="ambient-glow glow-top"></div>
-  <div class="ambient-glow glow-bottom"></div>
 
-  <div class="app-container">
-    <!-- Header & Identity Bar -->
-    <header class="app-header">
-      <div class="brand">
-        <div class="brand-icon">🍌</div>
-        <div class="brand-text">
-          <h1>Banana Puzzle Challenge</h1>
-        </div>
-      </div>
+  <div class="app-wrapper">
 
-      <!-- Auth / User Panel -->
-      <div class="identity-panel" id="identityPanel">
-        <div class="user-badge">
-          <span class="user-avatar" id="userAvatar"><i class="fa-solid fa-user"></i></span>
-          <div class="user-info">
-            <span class="user-name" id="userNameDisplay">Guest</span>
-            <span class="user-role badge-guest" id="userRoleBadge">Not logged in</span>
-          </div>
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+      <a href="/" class="nav-brand">
+        <span class="brand-badge">🍌</span>
+        <span class="brand-title">Banana Puzzle</span>
+      </a>
+
+      <nav class="nav-menu">
+        <a href="/" class="nav-link active"><i class="fa-solid fa-gamepad"></i> Game</a>
+        <a href="/profile.html" class="nav-link"><i class="fa-solid fa-chart-line"></i> Profile</a>
+        <a href="/admin.html" class="nav-link hidden" id="adminNavBtn"><i class="fa-solid fa-shield-halved"></i> Admin</a>
+
+        <div class="user-pill">
+          <span class="font-bold" id="userDisplayName">Explorer</span>
+          <span class="badge badge-neutral" id="userRoleTag">PLAYER</span>
         </div>
-        <!-- Shown when NOT logged in -->
-        <button id="openAuthBtn" class="btn btn-secondary btn-sm">
-          <i class="fa-solid fa-right-to-bracket"></i> Login
+
+        <button id="muteBtn" class="btn btn-xs btn-outline" title="Toggle audio feedback">
+          <i class="fa-solid fa-volume-high"></i>
         </button>
-        <!-- Shown when logged in -->
-        <button id="logoutHeaderBtn" class="btn btn-ghost btn-sm hidden">
-          <i class="fa-solid fa-right-from-bracket"></i> Logout
+
+        <button id="logoutBtn" class="btn btn-xs btn-outline" title="Sign out">
+          <i class="fa-solid fa-right-from-bracket"></i>
         </button>
-      </div>
+      </nav>
     </header>
 
-    <!-- System Ribbon -->
-    <div class="system-ribbon">
-      <div class="ribbon-item">
-        <span class="status-dot dot-active"></span>
-        <span>Architecture: <strong>Distributed REST (Client &harr; Node/Express &harr; Banana API)</strong></span>
+    <!-- Session Stats Bar -->
+    <section class="stats-bar">
+      <div class="stat-box">
+        <span class="stat-label">Session Score</span>
+        <span class="stat-val text-primary" id="statScore">0</span>
+        <span class="text-muted" style="font-size:0.75rem;">Points accumulated</span>
       </div>
-      <div class="ribbon-item">
-        <span class="badge-pill" id="apiStatusBadge">API Connected</span>
+      <div class="stat-box">
+        <span class="stat-label">Current Streak</span>
+        <span class="stat-val" id="statStreak">0</span>
+        <span class="text-muted" style="font-size:0.75rem;">Consecutive solved</span>
       </div>
-      <div class="ribbon-actions">
-        <button id="toggleApiSimBtn" class="btn btn-ghost btn-xs" title="Simulate external Banana API failure">
-          <i class="fa-solid fa-bolt"></i> Simulate API Failure: <span id="simFailureStatus">OFF</span>
+      <div class="stat-box">
+        <span class="stat-label">Puzzles Played</span>
+        <span class="stat-val" id="statPlayed">0</span>
+        <span class="text-muted" style="font-size:0.75rem;">Total attempts</span>
+      </div>
+    </section>
+
+    <!-- Main Game Area Card -->
+    <main class="card">
+
+      <!-- Difficulty Selector -->
+      <div class="difficulty-selector">
+        <button class="diff-btn active" data-difficulty-choice="easy">
+          <i class="fa-regular fa-clock"></i> Easy (45s)
+        </button>
+        <button class="diff-btn" data-difficulty-choice="medium">
+          <i class="fa-solid fa-fire text-warning"></i> Medium (20s)
+        </button>
+        <button class="diff-btn" data-difficulty-choice="hard">
+          <i class="fa-solid fa-bolt text-danger"></i> Hard (10s)
         </button>
       </div>
-    </div>
 
-    <!-- Main Game Area -->
-    <main class="game-dashboard">
-      <!-- Stats Bar -->
-      <section class="stats-grid">
-        <div class="stat-card">
-          <span class="stat-label"><i class="fa-solid fa-star"></i> Total Score</span>
-          <span class="stat-value" id="scoreDisplay">0</span>
-          <span class="stat-hint">+10 per correct answer</span>
+      <!-- Start Screen View -->
+      <div id="startCard" class="text-center py-6">
+        <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Interactive Logic Challenge</h2>
+        <p class="text-muted" style="max-width: 480px; margin: 0 auto 24px; font-size: 0.95rem;">
+          Calculate the hidden numerical value represented by the question mark. Select your preferred difficulty mode above to begin.
+        </p>
+        <button id="startGameBtn" class="btn btn-primary" style="padding: 12px 28px; font-size: 1rem;">
+          <i class="fa-solid fa-play"></i> Start Challenge
+        </button>
+      </div>
+
+      <!-- Loading View -->
+      <div id="loadingCard" class="text-center py-6 hidden">
+        <div style="font-size: 2rem; margin-bottom: 12px; color: var(--color-primary);">
+          <i class="fa-solid fa-spinner fa-spin"></i>
         </div>
-        <div class="stat-card">
-          <span class="stat-label"><i class="fa-solid fa-fire"></i> Streak</span>
-          <span class="stat-value streak-value" id="streakDisplay">0</span>
-          <span class="stat-hint">Consecutive correct</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label"><i class="fa-solid fa-gamepad"></i> Played</span>
-          <span class="stat-value" id="playedDisplay">0</span>
-          <span class="stat-hint">This session</span>
-        </div>
-      </section>
+        <p class="font-bold">Fetching Puzzle from Remote API...</p>
+        <p class="text-muted" style="font-size: 0.85rem;">Authenticating payload through server proxy</p>
+      </div>
 
-      <!-- Puzzle Stage -->
-      <section class="puzzle-stage" id="puzzleStage">
-        <!-- Alert Banner -->
-        <div id="alertBanner" class="alert-banner hidden" role="alert">
-          <span class="alert-icon" id="alertIcon"></span>
-          <span class="alert-text" id="alertMessage">Message</span>
-          <button id="alertCloseBtn" class="alert-close" aria-label="Close message">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-
-        <!-- Puzzle Display -->
-        <div class="puzzle-view-container">
-          <!-- Start Screen -->
-          <div id="startScreen" class="screen-view active-view">
-            <div class="welcome-card">
-              <div class="welcome-emoji">
-                <i class="fa-solid fa-puzzle-piece"></i>
-              </div>
-              <h2>Ready to test your logic?</h2>
-              <p>
-                Each puzzle shows symbols and bananas representing numbers.
-                Find the value of the question mark (<strong>0&ndash;9</strong>) and submit your answer!
-              </p>
-              <button id="startGameBtn" class="btn btn-primary btn-lg">
-                <i class="fa-solid fa-play"></i> Start Game
-              </button>
-            </div>
+      <!-- Active Puzzle Presentation -->
+      <div id="puzzleContainer" class="puzzle-box hidden">
+        <div class="timer-container">
+          <div class="timer-meta">
+            <span><i class="fa-regular fa-clock"></i> Time Remaining</span>
+            <span class="font-mono font-bold" id="timerCountdown">45s</span>
           </div>
-
-          <!-- Loading View -->
-          <div id="loadingView" class="screen-view hidden">
-            <div class="loader-spinner"></div>
-            <p class="loading-text">Fetching puzzle from Banana API&hellip;</p>
-            <span class="loading-subtext">Communicating via server-side HTTP proxy</span>
-          </div>
-
-          <!-- Active Puzzle View -->
-          <div id="activePuzzleView" class="screen-view hidden">
-            <div class="image-wrapper">
-              <img id="puzzleImage" src="" alt="Banana Logic Puzzle" class="puzzle-image">
-            </div>
-
-            <div class="puzzle-meta">
-              <span id="puzzleSourceBadge" class="source-tag">Source: Live API</span>
-              <span class="security-note">
-                <i class="fa-solid fa-lock"></i> Solution verified server-side
-              </span>
-            </div>
-
-            <!-- Answer Form -->
-            <form id="answerForm" class="answer-form">
-              <div class="input-group">
-                <label for="answerInput" class="input-label">Your Answer (0&ndash;9):</label>
-                <div class="input-row">
-                  <input
-                    type="number"
-                    id="answerInput"
-                    name="answer"
-                    min="0" max="9" step="1"
-                    placeholder="0–9"
-                    required
-                    autocomplete="off"
-                  >
-                  <button type="submit" id="submitAnswerBtn" class="btn btn-primary">
-                    <i class="fa-solid fa-circle-check"></i> Check
-                  </button>
-                </div>
-              </div>
-            </form>
-
-            <!-- Quick Numpad -->
-            <div class="quick-numpad" id="quickNumpad">
-              <span class="numpad-title">Quick Select:</span>
-              <div class="numpad-grid">
-                <button type="button" class="numpad-btn" data-val="0">0</button>
-                <button type="button" class="numpad-btn" data-val="1">1</button>
-                <button type="button" class="numpad-btn" data-val="2">2</button>
-                <button type="button" class="numpad-btn" data-val="3">3</button>
-                <button type="button" class="numpad-btn" data-val="4">4</button>
-                <button type="button" class="numpad-btn" data-val="5">5</button>
-                <button type="button" class="numpad-btn" data-val="6">6</button>
-                <button type="button" class="numpad-btn" data-val="7">7</button>
-                <button type="button" class="numpad-btn" data-val="8">8</button>
-                <button type="button" class="numpad-btn" data-val="9">9</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Result View -->
-          <div id="resultView" class="screen-view hidden">
-            <div class="result-card" id="resultCard">
-              <div class="result-icon" id="resultIcon"></div>
-              <h2 id="resultHeading">Correct!</h2>
-              <p id="resultFeedback" class="result-description">You earned 10 points!</p>
-
-              <div class="result-details">
-                <div class="detail-pill">Your Answer: <strong id="resUserAns">-</strong></div>
-                <div class="detail-pill">Solution: <strong id="resCorrectAns">-</strong></div>
-              </div>
-
-              <div class="result-actions">
-                <button id="nextPuzzleBtn" class="btn btn-primary btn-lg">
-                  Next Puzzle <i class="fa-solid fa-arrow-right"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Error View -->
-          <div id="errorView" class="screen-view hidden">
-            <div class="error-card">
-              <div class="error-emoji">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-              </div>
-              <h3 id="errorHeading">API Connection Error</h3>
-              <p id="errorMessageText">Unable to reach the Banana API server.</p>
-              <div class="error-actions">
-                <button id="retryApiBtn" class="btn btn-primary">
-                  <i class="fa-solid fa-rotate-right"></i> Retry
-                </button>
-                <button id="loadOfflineBtn" class="btn btn-secondary">
-                  <i class="fa-solid fa-box-archive"></i> Load Offline Puzzle
-                </button>
-              </div>
-            </div>
+          <div class="timer-track">
+            <div class="timer-fill" id="timerBar"></div>
           </div>
         </div>
 
-        <!-- Controls Footer -->
-        <div class="stage-footer">
-          <button id="newPuzzleBtn" class="btn btn-secondary" title="Fetch a new puzzle">
-            <i class="fa-solid fa-rotate-right"></i> New Puzzle
-          </button>
-          <button id="submitScoreBtn" class="btn btn-primary" title="Save score to leaderboard">
-            <i class="fa-solid fa-trophy"></i> Submit Score
-          </button>
-          <button id="resetSessionBtn" class="btn btn-ghost" title="Reset current game stats">
-            <i class="fa-solid fa-trash-can"></i> Reset Session
-          </button>
-          <button id="archInfoBtn" class="btn btn-ghost" title="Architecture details">
-            <i class="fa-solid fa-circle-info"></i> Architecture
-          </button>
-        </div>
-      </section>
-
-      <!-- Leaderboard Section -->
-      <section class="leaderboard-section" id="leaderboardSection">
-        <div class="leaderboard-header">
-          <h2 class="leaderboard-title">
-            <i class="fa-solid fa-trophy"></i> Top Players
-          </h2>
-          <button id="refreshLeaderboardBtn" class="btn btn-ghost btn-sm" title="Refresh">
-            <i class="fa-solid fa-rotate-right"></i> Refresh
-          </button>
+        <div class="puzzle-image-frame">
+          <img id="puzzleImg" src="" alt="Banana Logic Puzzle">
         </div>
 
-        <div id="myRankBanner" class="my-rank-banner hidden">
-          <i class="fa-solid fa-medal"></i> <span id="myRankText">You are ranked #1</span>
+        <div class="puzzle-badges">
+          <span class="badge badge-easy" id="difficultyBadge">EASY</span>
+          <span class="badge badge-neutral" id="sourceBadge">Live API</span>
         </div>
 
-        <div id="leaderboardLoading" class="lb-loading">
-          <div class="lb-spinner"></div>
-          <span>Loading leaderboard&hellip;</span>
+        <!-- Answer Input Form -->
+        <form id="answerForm" class="answer-form">
+          <div class="input-row">
+            <input
+              type="text"
+              id="answerInput"
+              class="answer-digit-input"
+              maxlength="1"
+              placeholder="0-9"
+              autocomplete="off"
+            >
+            <button type="submit" id="submitAnswerBtn" class="btn btn-primary">
+              <i class="fa-solid fa-arrow-right"></i> Submit
+            </button>
+          </div>
+        </form>
+
+        <!-- On-Screen Touch Numpad -->
+        <div class="numpad-grid">
+          <button type="button" class="numpad-key" data-numpad-val="1">1</button>
+          <button type="button" class="numpad-key" data-numpad-val="2">2</button>
+          <button type="button" class="numpad-key" data-numpad-val="3">3</button>
+          <button type="button" class="numpad-key" data-numpad-val="4">4</button>
+          <button type="button" class="numpad-key" data-numpad-val="5">5</button>
+          <button type="button" class="numpad-key" data-numpad-val="6">6</button>
+          <button type="button" class="numpad-key" data-numpad-val="7">7</button>
+          <button type="button" class="numpad-key" data-numpad-val="8">8</button>
+          <button type="button" class="numpad-key" data-numpad-val="9">9</button>
+          <button type="button" class="numpad-key" data-numpad-val="0">0</button>
+        </div>
+      </div>
+
+      <!-- Result Card -->
+      <div id="resultCard" class="text-center py-6 hidden">
+        <div id="resultIcon" style="font-size: 3rem; margin-bottom: 12px;"></div>
+        <h2 id="resultTitle" style="font-size: 1.5rem; margin-bottom: 6px;">Result</h2>
+        <p id="resultFeedback" class="text-muted" style="margin-bottom: 20px;">Feedback description</p>
+
+        <div style="display: flex; justify-content: center; gap: 16px; margin-bottom: 24px;">
+          <div style="background: #000; border: 1px solid var(--color-border); padding: 8px 18px; border-radius: var(--radius-sm); font-size: 0.88rem;">
+            Your Answer: <strong class="font-mono" id="resultUserAnswer">-</strong>
+          </div>
+          <div style="background: #000; border: 1px solid var(--color-border); padding: 8px 18px; border-radius: var(--radius-sm); font-size: 0.88rem;">
+            Solution: <strong class="font-mono text-primary" id="resultCorrectSolution">-</strong>
+          </div>
+          <div style="background: #000; border: 1px solid var(--color-border); padding: 8px 18px; border-radius: var(--radius-sm); font-size: 0.88rem;">
+            Points: <strong class="font-mono text-success" id="resultPoints">+0 pts</strong>
+          </div>
         </div>
 
-        <div id="leaderboardEmpty" class="lb-empty hidden">
-          <span class="lb-empty-icon"><i class="fa-solid fa-gamepad"></i></span>
-          <p>No scores yet — be the first to submit!</p>
-          <p class="lb-empty-hint">Login, play some puzzles, then click <strong>Submit Score</strong>.</p>
-        </div>
+        <button id="nextPuzzleBtn" class="btn btn-primary" style="padding: 12px 28px;">
+          Next Puzzle <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
 
-        <div id="leaderboardTable" class="lb-table-wrap hidden">
-          <table class="lb-table">
-            <thead>
-              <tr>
-                <th class="lb-col-rank">Rank</th>
-                <th class="lb-col-name">Player</th>
-                <th class="lb-col-score">Score</th>
-                <th class="lb-col-streak">Best Streak</th>
-                <th class="lb-col-played">Puzzles</th>
-              </tr>
-            </thead>
-            <tbody id="leaderboardBody"></tbody>
-          </table>
+      <!-- Error / Fallback View -->
+      <div id="errorCard" class="text-center py-6 hidden">
+        <div style="font-size: 2.5rem; color: var(--color-danger); margin-bottom: 12px;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
         </div>
-      </section>
+        <h3 style="margin-bottom: 8px;">Network or Service Disruption</h3>
+        <p id="errorMessage" class="text-muted" style="max-width: 440px; margin: 0 auto 20px;">Could not connect to the remote Banana API.</p>
+        <div style="display: flex; justify-content: center; gap: 10px;">
+          <button id="retryBtn" class="btn btn-primary"><i class="fa-solid fa-rotate-right"></i> Retry Remote API</button>
+          <button id="offlineBtn" class="btn btn-outline"><i class="fa-solid fa-box-archive"></i> Use Offline Cache</button>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; border-top: 1px solid var(--color-border); padding-top: 16px;">
+        <button id="newPuzzleBtn" class="btn btn-sm btn-outline">
+          <i class="fa-solid fa-rotate-right"></i> New Puzzle
+        </button>
+        <button id="resetGameBtn" class="btn btn-sm btn-outline text-muted">
+          <i class="fa-solid fa-trash"></i> Reset Session
+        </button>
+      </div>
     </main>
 
-    <!-- ── AUTH MODAL (Login / Register) ── -->
-    <div id="authModal" class="modal-backdrop hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3><i class="fa-solid fa-user-shield"></i> Player Account</h3>
-          <button id="closeAuthModalBtn" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-
-        <!-- Tabs -->
-        <div class="auth-tabs">
-          <button class="auth-tab active" data-tab="login">
-            <i class="fa-solid fa-right-to-bracket"></i> Login
-          </button>
-          <button class="auth-tab" data-tab="register">
-            <i class="fa-solid fa-user-plus"></i> Register
-          </button>
-        </div>
-
-        <!-- Login Form -->
-        <form id="loginForm" class="modal-body auth-panel">
-          <p class="modal-desc">Sign in to track your high score on the leaderboard.</p>
-          <div class="form-field">
-            <label for="loginUsername"><i class="fa-solid fa-user"></i> Username</label>
-            <input type="text" id="loginUsername" placeholder="Your username" autocomplete="username" required>
-          </div>
-          <div class="form-field">
-            <label for="loginPassword"><i class="fa-solid fa-lock"></i> Password</label>
-            <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password" required>
-          </div>
-          <div class="modal-actions">
-            <button type="submit" class="btn btn-primary">
-              <i class="fa-solid fa-right-to-bracket"></i> Login
-            </button>
-          </div>
-        </form>
-
-        <!-- Register Form -->
-        <form id="registerForm" class="modal-body auth-panel hidden">
-          <p class="modal-desc">Create an account to compete on the leaderboard.</p>
-          <div class="form-field">
-            <label for="regUsername"><i class="fa-solid fa-user"></i> Username</label>
-            <input type="text" id="regUsername" placeholder="Choose a username (2–30 chars)" autocomplete="username" required>
-          </div>
-          <div class="form-field">
-            <label for="regPassword"><i class="fa-solid fa-lock"></i> Password</label>
-            <input type="password" id="regPassword" placeholder="Min. 4 characters" autocomplete="new-password" required>
-          </div>
-          <div class="form-field">
-            <label for="regPasswordConfirm"><i class="fa-solid fa-lock"></i> Confirm Password</label>
-            <input type="password" id="regPasswordConfirm" placeholder="Repeat password" autocomplete="new-password" required>
-          </div>
-          <div class="modal-actions">
-            <button type="submit" class="btn btn-primary">
-              <i class="fa-solid fa-user-plus"></i> Create Account
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- ── ARCHITECTURE MODAL ── -->
-    <div id="archModal" class="modal-backdrop hidden">
-      <div class="modal-content modal-lg">
-        <div class="modal-header">
-          <h3><i class="fa-solid fa-diagram-project"></i> Distributed Architecture &amp; Theme Mapping</h3>
-          <button id="closeArchModalBtn" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="modal-body">
-          <div class="arch-themes-grid">
-            <div class="theme-box">
-              <h4><i class="fa-solid fa-code-branch"></i> 1. Version Control</h4>
-              <p>Repository initialized on Day 1. Granular commits track architecture, API service, UI and event flows.</p>
-            </div>
-            <div class="theme-box">
-              <h4><i class="fa-solid fa-network-wired"></i> 2. Interoperability</h4>
-              <p>Node.js backend consumes Marc Conrad's external Banana API (REST/HTTP) with mirror failover and offline fallback.</p>
-            </div>
-            <div class="theme-box">
-              <h4><i class="fa-solid fa-bolt"></i> 3. Event-Driven Programming</h4>
-              <p>DOM listeners handle clicks, form submits, keyboard inputs and async state transitions without page reloads.</p>
-            </div>
-            <div class="theme-box">
-              <h4><i class="fa-solid fa-id-card"></i> 4. Virtual Identity</h4>
-              <p>HttpOnly session cookies maintain player identity, role, scores and server-side puzzle solutions securely.</p>
-            </div>
-          </div>
-          <div class="arch-flow-diagram">
-            <h4>Data Flow:</h4>
-            <code>[Browser] &rarr; (JSON) &rarr; [Node.js/Express] &rarr; (REST) &rarr; [Banana API]</code>
-          </div>
+    <!-- Global Leaderboard Section -->
+    <section class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <h3 style="font-size: 1.1rem; font-weight: 700;">
+          <i class="fa-solid fa-trophy text-primary"></i> Global Standings
+        </h3>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn btn-xs btn-outline active" data-lb-difficulty="all">All</button>
+          <button class="btn btn-xs btn-outline" data-lb-difficulty="easy">Easy</button>
+          <button class="btn btn-xs btn-outline" data-lb-difficulty="medium">Medium</button>
+          <button class="btn btn-xs btn-outline" data-lb-difficulty="hard">Hard</button>
         </div>
       </div>
-    </div>
 
-    <!-- Footer -->
-    <footer class="app-footer">
-      <p>Banana Puzzle Challenge</p>
-    </footer>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 60px;" class="text-center">Rank</th>
+              <th>Player</th>
+              <th>Total Points</th>
+              <th>Accuracy</th>
+              <th>Avg Speed</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <tr>
+              <td colspan="5" class="text-center text-muted py-4">Loading standings...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
   </div>
 
-  <script src="game.js"></script>
+  <!-- Client-side Controllers -->
+  <script src="js/api.js"></script>
+  <script src="js/core/AudioController.js"></script>
+  <script src="js/core/InputController.js"></script>
+  <script src="js/game.js"></script>
 </body>
 </html>

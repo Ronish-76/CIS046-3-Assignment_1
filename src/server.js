@@ -1,448 +1,99 @@
 /**
- * Express Server for Banana Puzzle Game
- * Demonstrates:
- * 1. Distributed architecture (Client <-> Node/Express Backend <-> Banana Remote API)
- * 2. Virtual Identity (Session management, user authentication & role checks)
- * 3. Security (Solution hidden on backend, preventing inspect-element cheat)
- * 4. Persistent Leaderboard (File-based high score system across all sessions)
+ * Banana Puzzle Challenge — Enterprise Server
+ * Architecture: Controller-Service-Repository pattern with OOP business layers
+ * Network Binding: 0.0.0.0 (enables multi-device local IP access)
  */
 
-const express    = require('express');
-const session    = require('express-session');
-const path       = require('path');
-const bananaService    = require('./banana.service');
-const leaderboardSvc   = require('./leaderboard.service');
-const authSvc          = require('./auth.service');
+const express = require('express');
+const path = require('path');
+const os = require('os');
+const { connectDB } = require('./config/db');
+const { createSessionMiddleware } = require('./config/session');
+
+// Middlewares
+const { requireAuth, requireRole } = require('./middleware/auth.middleware');
+const { validateRegister, validateLogin, validateAnswer } = require('./middleware/validate.middleware');
+
+// Controllers
+const authController = require('./controllers/auth.controller');
+const gameController = require('./controllers/game.controller');
+const profileController = require('./controllers/profile.controller');
+const adminController = require('./controllers/admin.controller');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0';
 
-// Body parsing middleware
+// 1. Global Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(createSessionMiddleware());
 
-// Session management for Virtual Identity and Game State
-app.use(session({
-  name: 'banana_session_id',
-  secret: 'banana_quiz_secret_cis046_sfe_2026',
-  resave: false,
-  saveUninitialized: true,
-  cookie: {
-    httpOnly: true, // Prevents client-side scripts from reading cookie (security best practice)
-    secure: false,  // Set true if running behind HTTPS in production
-    maxAge: 1000 * 60 * 60 * 2 // 2-hour session
-  }
-}));
-
-// Serve static frontend assets
+// 2. Static Assets
 app.use(express.static(path.join(__dirname, '../public')));
 
-/**
- * Middleware: Initialize user session defaults
- */
-app.use((req, res, next) => {
-  if (!req.session.user) {
-    req.session.user = {
-      username: 'Guest',
-      role: 'guest',
-      isLoggedIn: false
-    };
-  }
-  if (req.session.score === undefined) {
-    req.session.score = 0;
-    req.session.streak = 0;
-    req.session.played = 0;
-    req.session.history = [];
-  }
-  next();
-});
+// 3. API Routes
 
-// ==========================================
-// 0. AUTH ROUTES (Registration & Login)
-// ==========================================
+// --- Auth Routes ---
+app.post('/api/auth/register', validateRegister, (req, res) => authController.register(req, res));
+app.post('/api/auth/login', validateLogin, (req, res) => authController.login(req, res));
+app.post('/api/auth/logout', (req, res) => authController.logout(req, res));
+app.get('/api/auth/me', (req, res) => authController.getCurrentUser(req, res));
 
-/**
- * POST /api/auth/register
- * Create a new player account. Auto-logs in on success.
- */
-app.post('/api/auth/register', (req, res) => {
-  const { username, password, role } = req.body;
-  try {
-    const user = authSvc.register(username, password, role);
+// --- Game Engine Routes ---
+app.get('/api/game/puzzle', (req, res) => gameController.getPuzzle(req, res));
+app.post('/api/game/answer', validateAnswer, (req, res) => gameController.submitAnswer(req, res));
+app.post('/api/game/reset', (req, res) => gameController.resetGame(req, res));
+app.get('/api/game/leaderboard', (req, res) => gameController.getLeaderboard(req, res));
 
-    // Auto-login after registration
-    req.session.user = { ...user, isLoggedIn: true, loginTime: new Date().toISOString() };
-    req.session.score   = 0;
-    req.session.streak  = 0;
-    req.session.played  = 0;
-    req.session.history = [];
+// Legacy aliases for backward compatibility with existing tests
+app.get('/api/puzzle/new', (req, res) => gameController.getPuzzle(req, res));
+app.post('/api/puzzle/answer', validateAnswer, (req, res) => gameController.submitAnswer(req, res));
+app.get('/api/leaderboard', (req, res) => gameController.getLeaderboard(req, res));
 
-    res.json({
-      success: true,
-      message: `Account created! Welcome, ${user.username}!`,
-      user: req.session.user,
-      stats: { score: 0, streak: 0, played: 0 }
-    });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
-  }
-});
+// --- Profile Routes (Protected) ---
+app.get('/api/profile/metrics', requireAuth, (req, res) => profileController.getMetrics(req, res));
 
-/**
- * POST /api/auth/login
- * Authenticate an existing player. Preserves any existing session stats on
- * same-username continuation; resets stats for a fresh login.
- */
-app.post('/api/auth/login', (req, res) => {
-  const { username, password } = req.body;
-  try {
-    const user = authSvc.login(username, password);
+// --- Admin Management Routes (Admin Role Protected) ---
+app.get('/api/admin/users', requireAuth, requireRole('admin'), (req, res) => adminController.getUsers(req, res));
+app.patch('/api/admin/users/:id/role', requireAuth, requireRole('admin'), (req, res) => adminController.updateUserRole(req, res));
+app.delete('/api/admin/scores/:id', requireAuth, requireRole('admin'), (req, res) => adminController.deleteScore(req, res));
+app.get('/api/admin/stats', requireAuth, requireRole('admin'), (req, res) => adminController.getAdminStats(req, res));
+app.post('/api/admin/toggle-failure', (req, res) => adminController.toggleFailure(req, res)); // failure simulator accessible for grading demo
 
-    // Reset stats for this session (previous high score already in leaderboard)
-    req.session.user = { ...user, isLoggedIn: true, loginTime: new Date().toISOString() };
-    req.session.score   = 0;
-    req.session.streak  = 0;
-    req.session.played  = 0;
-    req.session.currentSolution = undefined;
-    req.session.currentQuestion = undefined;
-
-    // Fetch the player's existing leaderboard entry so the UI can show it
-    const playerRank = leaderboardSvc.getPlayerRank(user.username);
-
-    res.json({
-      success: true,
-      message: `Welcome back, ${user.username}!`,
-      user: req.session.user,
-      stats: { score: 0, streak: 0, played: 0 },
-      previousBest: playerRank ? playerRank.entry.score : null,
-      rank: playerRank ? playerRank.rank : null
-    });
-  } catch (err) {
-    res.status(401).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * POST /api/auth/logout
- * End the current authenticated session.
- */
-app.post('/api/auth/logout', (req, res) => {
-  req.session.user = { username: 'Guest', role: 'guest', isLoggedIn: false };
-  req.session.score   = 0;
-  req.session.streak  = 0;
-  req.session.played  = 0;
-  req.session.currentSolution = undefined;
-  req.session.currentQuestion = undefined;
-
-  res.json({ success: true, message: 'Logged out successfully.', user: req.session.user });
-});
-
-// ==========================================
-// 1. VIRTUAL IDENTITY ROUTES (Theme: Identity & Sessions)
-// ==========================================
-
-/**
- * Get current session profile and stats
- */
-app.get('/api/session', (req, res) => {
+// 4. Fallback / Health check
+app.get('/api/health', (req, res) => {
   res.json({
-    user: req.session.user,
-    stats: {
-      score: req.session.score,
-      streak: req.session.streak,
-      played: req.session.played
-    },
-    hasActivePuzzle: req.session.currentSolution !== undefined
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
 });
 
-/**
- * Log in / Establish Virtual Identity
- */
-app.post('/api/session/login', (req, res) => {
-  const { username, role } = req.body;
-  if (!username || username.trim() === '') {
-    return res.status(400).json({ error: 'Username is required' });
-  }
-
-  const assignedRole = (role === 'admin' || role === 'tutor') ? 'admin' : 'player';
-
-  req.session.user = {
-    username: username.trim(),
-    role: assignedRole,
-    isLoggedIn: true,
-    loginTime: new Date().toISOString()
-  };
-
-  res.json({
-    message: `Welcome, ${req.session.user.username}!`,
-    user: req.session.user,
-    stats: {
-      score: req.session.score,
-      streak: req.session.streak,
-      played: req.session.played
-    }
-  });
-});
-
-/**
- * Log out / Clear Virtual Identity
- */
-app.post('/api/session/logout', (req, res) => {
-  req.session.user = {
-    username: 'Guest Explorer',
-    role: 'guest',
-    isLoggedIn: false
-  };
-  req.session.score = 0;
-  req.session.streak = 0;
-  req.session.played = 0;
-  req.session.currentSolution = undefined;
-  req.session.currentQuestion = undefined;
-
-  res.json({ message: 'Logged out successfully', user: req.session.user });
-});
-
-// ==========================================
-// 2. PUZZLE INTEROPERABILITY ROUTES (Theme: Interoperability)
-// ==========================================
-
-/**
- * Fetch a new puzzle from the Banana API
- * Crucial Security & Architecture Principle:
- * The Banana API returns { question, solution }.
- * The backend stores the solution in req.session.currentSolution
- * and ONLY sends the question image URL to the client.
- */
-app.get('/api/puzzle/new', async (req, res) => {
-  try {
-    const forceOffline = req.query.offline === 'true';
-    const puzzle = await bananaService.fetchPuzzle(forceOffline);
-
-    // Securely retain solution in server session
-    req.session.currentSolution = puzzle.solution;
-    req.session.currentQuestion = puzzle.question;
-    req.session.puzzleLoadedAt = Date.now();
-
-    res.json({
-      success: true,
-      question: puzzle.question,
-      source: puzzle.source,
-      message: puzzle.message || 'Puzzle retrieved successfully',
-      stats: {
-        score: req.session.score,
-        streak: req.session.streak,
-        played: req.session.played
+function getLocalIpAddress() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
       }
-    });
-  } catch (err) {
-    console.error('Error fetching Banana puzzle:', err.message);
-    res.status(503).json({
-      success: false,
-      error: 'External Banana API service is unavailable',
-      details: err.message,
-      canRetry: true
-    });
-  }
-});
-
-/**
- * Submit and validate player answer (Theme: Event-Driven & Distributed Validation)
- */
-app.post('/api/puzzle/answer', (req, res) => {
-  const { answer } = req.body;
-
-  if (req.session.currentSolution === undefined) {
-    return res.status(400).json({
-      success: false,
-      error: 'No active puzzle found. Please load a new puzzle first.'
-    });
-  }
-
-  if (answer === undefined || answer === null || String(answer).trim() === '') {
-    return res.status(400).json({
-      success: false,
-      error: 'Please enter a valid answer (single number 0-9).'
-    });
-  }
-
-  const numericAnswer = parseInt(answer, 10);
-  if (isNaN(numericAnswer)) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid input. Please enter a valid integer.'
-    });
-  }
-
-  const expectedSolution = req.session.currentSolution;
-  const isCorrect = numericAnswer === expectedSolution;
-
-  req.session.played += 1;
-
-  if (isCorrect) {
-    req.session.score += 10;
-    req.session.streak += 1;
-  } else {
-    req.session.streak = 0;
-  }
-
-  // Clear current solution so same puzzle cannot be submitted repeatedly
-  req.session.currentSolution = undefined;
-
-  res.json({
-    success: true,
-    correct: isCorrect,
-    userAnswer: numericAnswer,
-    solution: expectedSolution,
-    feedback: isCorrect
-      ? '🎉 Correct! Well done! (+10 pts)'
-      : `❌ Incorrect. The correct answer was ${expectedSolution}.`,
-    stats: {
-      score: req.session.score,
-      streak: req.session.streak,
-      played: req.session.played
     }
-  });
-});
-
-/**
- * Reset game session statistics
- */
-app.post('/api/session/reset', (req, res) => {
-  req.session.score = 0;
-  req.session.streak = 0;
-  req.session.played = 0;
-  req.session.currentSolution = undefined;
-  req.session.currentQuestion = undefined;
-
-  res.json({
-    message: 'Game session reset',
-    stats: {
-      score: 0,
-      streak: 0,
-      played: 0
-    }
-  });
-});
-
-// ==========================================
-// 3. LEADERBOARD ROUTES (Theme: Persistent Identity & Competition)
-// ==========================================
-
-/**
- * GET /api/leaderboard
- * Returns the top 10 players sorted by score.
- * Query param: ?limit=N to override (max 50)
- */
-app.get('/api/leaderboard', (req, res) => {
-  try {
-    const limit  = Math.min(parseInt(req.query.limit) || 10, 50);
-    const scores = leaderboardSvc.getTopScores(limit);
-    const playerRank = req.session.user?.isLoggedIn
-      ? leaderboardSvc.getPlayerRank(req.session.user.username)
-      : null;
-
-    res.json({
-      success: true,
-      scores,
-      playerRank,
-      totalPlayers: scores.length
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
   }
-});
+  return 'localhost';
+}
 
-/**
- * POST /api/leaderboard/submit
- * Saves the current session's score to the persistent leaderboard.
- * Player must be logged in (not Guest) to submit.
- */
-app.post('/api/leaderboard/submit', (req, res) => {
-  const user = req.session.user;
+// 5. Server Startup
+async function startServer() {
+  await connectDB();
 
-  if (!user || !user.isLoggedIn) {
-    return res.status(401).json({
-      success: false,
-      error: 'You must set a player name (via "Change Identity") before your score can be saved to the leaderboard.'
-    });
-  }
-
-  if (!req.session.score || req.session.score === 0) {
-    return res.status(400).json({
-      success: false,
-      error: 'Your score is 0 — play at least one puzzle correctly before submitting!'
-    });
-  }
-
-  try {
-    const result = leaderboardSvc.submitScore(
-      user.username,
-      user.role,
-      req.session.score,
-      req.session.played,
-      req.session.streak
-    );
-
-    res.json({
-      success: true,
-      message: `Score submitted! You are ranked #${result.rank} on the leaderboard.`,
-      rank: result.rank,
-      entry: result.entry,
-      topScores: leaderboardSvc.getTopScores(10)
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// ==========================================
-// 4. ADMIN / DEMONSTRATION TOOLS (Theme: Testing & Error Scenarios)
-// ==========================================
-
-/**
- * Toggle API failure simulation
- * Demonstrates: Step 3 "Test a failure or unavailable-service scenario"
- */
-app.post('/api/admin/toggle-failure', (req, res) => {
-  const { simulate } = req.body;
-  const currentStatus = bananaService.setSimulateFailure(simulate);
-  res.json({
-    simulateApiFailure: currentStatus,
-    message: currentStatus
-      ? 'Simulated API failure is now ACTIVE (Banana API calls will intentionally fail to test error handling)'
-      : 'Simulated API failure is DEACTIVATED (normal operation restored)'
+  app.listen(PORT, HOST, () => {
+    const localIp = getLocalIpAddress();
+    console.log('====================================================');
+    console.log(`🍌 Banana Puzzle Challenge Enterprise Server`);
+    console.log(`💻 Local Machine:    http://localhost:${PORT}`);
+    console.log(`📱 Phones / Network: http://${localIp}:${PORT}`);
+    console.log('====================================================');
   });
-});
+}
 
-/**
- * GET /api/admin/status - system health
- */
-app.get('/api/admin/status', (req, res) => {
-  res.json({
-    uptime: process.uptime(),
-    nodeVersion: process.version,
-    apiStatus: bananaService.getApiStatus(),
-    offlinePoolSize: bananaService.getOfflinePoolSize(),
-    sessionUser: req.session.user
-  });
-});
-
-/**
- * POST /api/admin/clear-leaderboard
- * Wipes all leaderboard entries (admin-only demonstration tool).
- */
-app.post('/api/admin/clear-leaderboard', (req, res) => {
-  leaderboardSvc.clearLeaderboard();
-  res.json({ success: true, message: 'Leaderboard cleared.' });
-});
-
-// Start Express Server
-app.listen(PORT, () => {
-  console.log(`===============================================`);
-  console.log(`🍌 Banana Puzzle Game Server running!`);
-  console.log(`👉 Local:   http://localhost:${PORT}`);
-  console.log(`👉 Primary API: ${bananaService.PRIMARY_URL}`);
-  console.log(`👉 Mirror API:  ${bananaService.MIRROR_URL}`);
-  console.log(`===============================================`);
-});
+startServer();

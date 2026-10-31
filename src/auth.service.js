@@ -1,132 +1,110 @@
 /**
- * Auth Service
- * Handles user registration, login and password verification.
- * Uses Node.js built-in 'crypto' (no extra npm packages required).
- *
- * Passwords are stored as HMAC-SHA256(password, uniqueSalt) — never in plain text.
+ * Auth Service — MongoDB / Mongoose implementation
+ * Register/Login using email + password.
+ * Passwords hashed with HMAC-SHA256 + unique salt (Node built-in crypto).
  */
 
-const fs     = require('fs');
-const path   = require('path');
 const crypto = require('crypto');
+const User = require('./models/User');
 
-const DATA_DIR   = path.join(__dirname, '../data');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-
-// ─────────────────────────────────────────────────────────────
-// Internal helpers
-// ─────────────────────────────────────────────────────────────
-
-function ensureUsersFile() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(USERS_FILE)) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify({ users: [] }, null, 2), 'utf8');
-  }
-}
-
-function readData() {
-  ensureUsersFile();
-  try {
-    return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-  } catch {
-    return { users: [] };
-  }
-}
-
-function writeData(data) {
-  ensureUsersFile();
-  fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
-
-/** Generate a random 32-char hex salt */
 function generateSalt() {
   return crypto.randomBytes(16).toString('hex');
 }
 
-/** HMAC-SHA256 hash using the user's unique salt */
 function hashPassword(password, salt) {
   return crypto.createHmac('sha256', salt).update(password).digest('hex');
 }
 
-/** Find a user record by username (case-insensitive) */
-function findUser(username) {
-  const data = readData();
-  return data.users.find(
-    (u) => u.username.toLowerCase() === username.toLowerCase().trim()
-  ) || null;
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// ─────────────────────────────────────────────────────────────
-// Public API
-// ─────────────────────────────────────────────────────────────
-
 /**
- * Register a new user account.
- * @returns {{ username, role }} safe public user object
+ * Register a new account.
+ * @param {string} email
+ * @param {string} displayName
+ * @param {string} password
+ * @param {string} role
+ * @returns {Promise<{ email, displayName, role }>}
  */
-function register(username, password, role = 'player') {
-  const trimmed = (username || '').trim();
+async function register(email, displayName, password, role = 'player') {
+  const trimEmail = (email || '').trim().toLowerCase();
+  const trimName  = (displayName || '').trim();
 
-  if (trimmed.length < 2 || trimmed.length > 30) {
-    throw new Error('Username must be between 2 and 30 characters.');
-  }
-  if (!/^[a-zA-Z0-9_ ]+$/.test(trimmed)) {
-    throw new Error('Username can only contain letters, numbers, spaces and underscores.');
-  }
-  if (!password || password.length < 4) {
-    throw new Error('Password must be at least 4 characters.');
+  if (!trimEmail || !isValidEmail(trimEmail)) {
+    throw new Error('Please enter a valid email address.');
   }
 
-  const existing = findUser(trimmed);
-  if (existing) {
-    throw new Error(`Username "${trimmed}" is already taken. Please choose another.`);
+  if (trimName.length < 2 || trimName.length > 30) {
+    throw new Error('Display name must be between 2 and 30 characters.');
+  }
+  if (!/^[a-zA-Z0-9_ ]+$/.test(trimName)) {
+    throw new Error('Display name can only contain letters, numbers, spaces and underscores.');
   }
 
-  const salt         = generateSalt();
+  if (!password || password.length < 6) {
+    throw new Error('Password must be at least 6 characters.');
+  }
+
+  // Check email collision
+  const existingEmail = await User.findOne({ email: trimEmail });
+  if (existingEmail) {
+    throw new Error('An account with this email already exists. Please log in.');
+  }
+
+  // Check display name collision (case-insensitive)
+  const existingName = await User.findOne({
+    displayName: { $regex: new RegExp(`^${trimName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+  });
+  if (existingName) {
+    throw new Error(`The display name "${trimName}" is already taken. Please choose another.`);
+  }
+
+  const salt = generateSalt();
   const passwordHash = hashPassword(password, salt);
-  const assignedRole = role === 'admin' ? 'admin' : 'player';
+  const assignedRole = (role === 'admin') ? 'admin' : 'player';
 
-  const data = readData();
-  data.users.push({
-    username: trimmed,
+  const newUser = new User({
+    email: trimEmail,
+    displayName: trimName,
     role: assignedRole,
     passwordHash,
-    salt,
-    createdAt: new Date().toISOString()
+    salt
   });
-  writeData(data);
 
-  return { username: trimmed, role: assignedRole };
+  await newUser.save();
+
+  return { email: newUser.email, displayName: newUser.displayName, role: newUser.role };
 }
 
 /**
- * Verify credentials and return safe user object on success.
- * @throws {Error} if credentials are invalid
+ * Authenticate a user by email + password.
+ * @returns {Promise<{ email, displayName, role }>}
  */
-function login(username, password) {
-  if (!username || !password) {
-    throw new Error('Username and password are required.');
-  }
+async function login(email, password) {
+  if (!email || !password) throw new Error('Email and password are required.');
 
-  const user = findUser(username);
+  const trimEmail = email.trim().toLowerCase();
+  const user = await User.findOne({ email: trimEmail });
   if (!user) {
-    throw new Error('Invalid username or password.');
+    throw new Error('No account found with that email address.');
   }
 
   const hash = hashPassword(password, user.salt);
   if (hash !== user.passwordHash) {
-    throw new Error('Invalid username or password.');
+    throw new Error('Incorrect password. Please try again.');
   }
 
-  return { username: user.username, role: user.role };
+  return { email: user.email, displayName: user.displayName, role: user.role };
 }
 
 /**
- * Check whether a username is already registered.
+ * Check whether an email is already registered.
  */
-function usernameExists(username) {
-  return !!findUser(username);
+async function emailExists(email) {
+  const trimEmail = (email || '').trim().toLowerCase();
+  const user = await User.findOne({ email: trimEmail });
+  return !!user;
 }
 
-module.exports = { register, login, usernameExists };
-
+module.exports = { register, login, emailExists };

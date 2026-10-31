@@ -16,10 +16,10 @@ The **Banana Puzzle Game** is an interactive, distributed web application built 
 
 | Theme | Implementation in this Project | Code Location / Evidence |
 | :--- | :--- | :--- |
-| **1. Version Control** | Initialized Git from Day 1. Granular, meaningful commit history tracking architectural milestones. | `.git/`, Git commit log, GitHub repository. |
-| **2. Interoperability** | Node.js backend communicates over HTTP REST with Marc Conrad's external Banana API. Includes mirror failover, request timeouts, and error handling. | [`src/banana.service.js`](src/banana.service.js) |
-| **3. Event-Driven Programming (EDP)** | Frontend event listeners capture button clicks, form submissions, numpad inputs, keyboard shortcuts, and dynamic DOM updates. | [`public/game.js`](public/game.js) |
-| **4. Virtual Identity** | Server-side sessions (`express-session`) manage player profiles, authentication state, roles (player vs admin), and keep puzzle solutions secure on the server. | [`src/server.js`](src/server.js) |
+| **1. Version Control** | Granular, meaningful commit history tracking architectural milestones. | `.git/`, Git commit log, GitHub repository. |
+| **2. Interoperability** | Node.js backend communicates over HTTP REST with Marc Conrad's external Banana API with automatic mirror failover and 20 offline fallback puzzles. | [`src/services/BananaApiService.js`](src/services/BananaApiService.js) |
+| **3. Event-Driven Programming (EDP)** | Frontend event listeners capture button clicks, form submissions, numpad inputs, keyboard shortcuts, Web Audio API synthesis, and DOM updates. | [`public/js/game.js`](public/js/game.js), [`public/js/core/InputController.js`](public/js/core/InputController.js), [`public/js/core/AudioController.js`](public/js/core/AudioController.js) |
+| **4. Virtual Identity** | MongoDB schemas, scrypt password hashing, session management (`express-session`), and Role-Based Access Control (`player` vs `admin`). | [`src/models/User.js`](src/models/User.js), [`src/middleware/auth.middleware.js`](src/middleware/auth.middleware.js) |
 
 ---
 
@@ -71,6 +71,7 @@ In a naive single-tier application, fetching the Banana API directly from the br
 - **Node.js** (v18.0.0 or higher)
 - **npm** (Node Package Manager)
 - **Git**
+- **MongoDB** (Local MongoDB Community Server running or MongoDB Atlas connection string)
 
 ### 2. Installation
 Clone the repository and install dependencies:

@@ -1,169 +1,115 @@
 /**
- * Leaderboard Service
- * Provides persistent, file-based high score storage so players compete
- * across sessions and page refreshes — no external database needed.
- *
- * Demonstrates:
- * - Persistent server-side state (beyond session scope)
- * - File I/O for lightweight data persistence
- * - Sorted ranking across multiple named virtual identities
+ * Leaderboard Service — MongoDB / Mongoose implementation
+ * Persistent high score storage in MongoDB.
  */
 
-const fs   = require('fs');
-const path = require('path');
-
-// Store leaderboard.json inside the project's /data folder
-const DATA_DIR  = path.join(__dirname, '../data');
-const DATA_FILE = path.join(DATA_DIR, 'leaderboard.json');
-
-// ────────────────────────────────────────────────────────────
-// Internal helpers
-// ────────────────────────────────────────────────────────────
-
-/**
- * Ensure /data directory and leaderboard.json exist.
- */
-function ensureDataFile() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ scores: [] }, null, 2), 'utf8');
-  }
-}
-
-/**
- * Read all scores from disk.
- * @returns {{ scores: Array }} parsed JSON object
- */
-function readData() {
-  ensureDataFile();
-  try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf8');
-    return JSON.parse(raw);
-  } catch {
-    return { scores: [] };
-  }
-}
-
-/**
- * Persist scores array back to disk.
- * @param {{ scores: Array }} data
- */
-function writeData(data) {
-  ensureDataFile();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
-
-// ────────────────────────────────────────────────────────────
-// Public API
-// ────────────────────────────────────────────────────────────
+const Score = require('./models/Score');
 
 /**
  * Submit (or update) a player's score on the leaderboard.
- * If the player already has an entry, we keep the HIGHER score.
+ * Keeps personal best score.
  *
  * @param {string} username
- * @param {string} role        - 'player' | 'admin'
- * @param {number} score       - total points earned this session
- * @param {number} played      - puzzles attempted this session
- * @param {number} streak      - best streak this session
- * @returns {{ rank: number, entry: object }}
+ * @param {string} role
+ * @param {number} score
+ * @param {number} played
+ * @param {number} streak
+ * @returns {Promise<{ rank: number, entry: object }>}
  */
-function submitScore(username, role, score, played, streak) {
+async function submitScore(username, role, score, played, streak) {
   if (!username || score === undefined) {
     throw new Error('Username and score are required to submit to the leaderboard.');
   }
 
-  const data = readData();
+  const cleanName = username.trim();
+  const existing = await Score.findOne({
+    username: { $regex: new RegExp(`^${cleanName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+  });
 
-  // Find existing entry for this username (case-insensitive)
-  const existingIdx = data.scores.findIndex(
-    (s) => s.username.toLowerCase() === username.toLowerCase()
-  );
+  const now = new Date();
 
-  const now = new Date().toISOString();
-
-  if (existingIdx !== -1) {
-    const existing = data.scores[existingIdx];
-    // Keep personal best score; update other fields if this session was better
+  if (existing) {
     if (score >= existing.score) {
-      data.scores[existingIdx] = {
-        username: username,
-        role,
-        score,
-        played,
-        bestStreak: Math.max(existing.bestStreak || 0, streak),
-        lastPlayed: now,
-        firstPlayed: existing.firstPlayed || now,
-        gamesSubmitted: (existing.gamesSubmitted || 0) + 1
-      };
+      existing.score = score;
+      existing.role = role || existing.role;
+      existing.played = played;
+      existing.bestStreak = Math.max(existing.bestStreak || 0, streak);
+      existing.lastPlayed = now;
+      existing.gamesSubmitted = (existing.gamesSubmitted || 0) + 1;
     } else {
-      // Score is lower — still update lastPlayed and totalGames
-      data.scores[existingIdx].lastPlayed    = now;
-      data.scores[existingIdx].bestStreak    = Math.max(existing.bestStreak || 0, streak);
-      data.scores[existingIdx].gamesSubmitted = (existing.gamesSubmitted || 0) + 1;
+      existing.lastPlayed = now;
+      existing.bestStreak = Math.max(existing.bestStreak || 0, streak);
+      existing.gamesSubmitted = (existing.gamesSubmitted || 0) + 1;
     }
+    await existing.save();
   } else {
-    // New player entry
-    data.scores.push({
-      username,
-      role,
+    await Score.create({
+      username: cleanName,
+      role: role || 'player',
       score,
       played,
       bestStreak: streak,
-      lastPlayed: now,
+      gamesSubmitted: 1,
       firstPlayed: now,
-      gamesSubmitted: 1
+      lastPlayed: now
     });
   }
 
-  // Sort descending by score, then by bestStreak as tiebreaker
-  data.scores.sort((a, b) => b.score - a.score || b.bestStreak - a.bestStreak);
-
-  writeData(data);
-
-  // Return this player's rank (1-based)
-  const rank = data.scores.findIndex(
-    (s) => s.username.toLowerCase() === username.toLowerCase()
-  ) + 1;
-
-  return { rank, entry: data.scores[rank - 1] };
+  // Calculate player rank
+  return await getPlayerRank(cleanName);
 }
 
 /**
- * Return the top N players on the leaderboard.
- * @param {number} limit - defaults to 10
- * @returns {Array}
+ * Return top N players sorted by score descending, then bestStreak descending.
+ * @param {number} limit
+ * @returns {Promise<Array>}
  */
-function getTopScores(limit = 10) {
-  const data = readData();
-  return data.scores.slice(0, limit).map((entry, idx) => ({
+async function getTopScores(limit = 10) {
+  const topList = await Score.find()
+    .sort({ score: -1, bestStreak: -1 })
+    .limit(limit)
+    .lean();
+
+  return topList.map((entry, idx) => ({
     rank: idx + 1,
     ...entry
   }));
 }
 
 /**
- * Get a specific player's leaderboard entry and rank.
+ * Get rank and entry for a specific player.
  * @param {string} username
- * @returns {{ rank: number, entry: object } | null}
+ * @returns {Promise<{ rank: number, entry: object } | null>}
  */
-function getPlayerRank(username) {
+async function getPlayerRank(username) {
   if (!username) return null;
-  const data = readData();
-  const idx  = data.scores.findIndex(
-    (s) => s.username.toLowerCase() === username.toLowerCase()
-  );
-  if (idx === -1) return null;
-  return { rank: idx + 1, entry: data.scores[idx] };
+
+  const cleanName = username.trim();
+  const target = await Score.findOne({
+    username: { $regex: new RegExp(`^${cleanName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+  }).lean();
+
+  if (!target) return null;
+
+  // Rank is 1 + count of players with higher score (or equal score with higher streak)
+  const higherCount = await Score.countDocuments({
+    $or: [
+      { score: { $gt: target.score } },
+      { score: target.score, bestStreak: { $gt: target.bestStreak || 0 } }
+    ]
+  });
+
+  return {
+    rank: higherCount + 1,
+    entry: target
+  };
 }
 
 /**
- * Clear all leaderboard data (admin / demo helper).
+ * Clear all leaderboard entries (admin / demo tool).
  */
-function clearLeaderboard() {
-  writeData({ scores: [] });
+async function clearLeaderboard() {
+  await Score.deleteMany({});
 }
 
 module.exports = {
@@ -172,4 +118,3 @@ module.exports = {
   getPlayerRank,
   clearLeaderboard
 };
-

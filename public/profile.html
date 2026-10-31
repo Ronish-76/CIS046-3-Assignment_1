@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Profile &amp; Metrics — Banana Puzzle Challenge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/profile.css">
+</head>
+<body>
+
+  <div class="app-wrapper">
+
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+      <a href="/" class="nav-brand">
+        <span class="brand-badge">🍌</span>
+        <span class="brand-title">Banana Puzzle</span>
+      </a>
+
+      <nav class="nav-menu">
+        <a href="/" class="nav-link"><i class="fa-solid fa-gamepad"></i> Game</a>
+        <a href="/profile.html" class="nav-link active"><i class="fa-solid fa-chart-line"></i> Profile</a>
+        <a href="/admin.html" class="nav-link hidden" id="adminNavBtn"><i class="fa-solid fa-shield-halved"></i> Admin</a>
+
+        <button id="logoutBtn" class="btn btn-xs btn-outline" title="Sign out">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+      </nav>
+    </header>
+
+    <!-- Profile Header Card -->
+    <section class="card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h1 style="font-size: 1.6rem; font-weight: 700;" id="profileName">Loading Profile...</h1>
+        <p class="text-muted" style="font-size: 0.88rem;" id="profileEmail">—</p>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <span class="badge badge-primary" id="profileRole">PLAYER</span>
+        <span class="text-muted" style="font-size: 0.82rem;">Member since <strong id="profileCreated">—</strong></span>
+      </div>
+    </section>
+
+    <!-- Aggregated Performance Metrics Grid -->
+    <section>
+      <h2 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 12px;">Performance Metrics</h2>
+      <div class="profile-grid">
+        <div class="profile-card">
+          <div class="profile-metric-title">Accuracy Rate</div>
+          <div class="profile-metric-val text-success" id="metricAccuracy">0%</div>
+          <div class="text-muted" style="font-size: 0.75rem;">(Correct Attempts / Total Attempts) &times; 100</div>
+        </div>
+
+        <div class="profile-card">
+          <div class="profile-metric-title">Average Solve Time</div>
+          <div class="profile-metric-val text-primary" id="metricAvgTime">0.00s</div>
+          <div class="text-muted" style="font-size: 0.75rem;">&sum; timeTaken / (Total &times; 1000)</div>
+        </div>
+
+        <div class="profile-card">
+          <div class="profile-metric-title">Total Solved</div>
+          <div class="profile-metric-val" id="metricTotalSolved">0</div>
+          <div class="text-muted" style="font-size: 0.75rem;">Across all difficulty tiers</div>
+        </div>
+
+        <div class="profile-card">
+          <div class="profile-metric-title">Total Attempts</div>
+          <div class="profile-metric-val" id="metricTotalAttempts">0</div>
+          <div class="text-muted" style="font-size: 0.75rem;">Puzzles submitted</div>
+        </div>
+
+        <div class="profile-card">
+          <div class="profile-metric-title">Best Solve Streak</div>
+          <div class="profile-metric-val text-warning" id="metricBestStreak">0</div>
+          <div class="text-muted" style="font-size: 0.75rem;">Consecutive correct answers</div>
+        </div>
+
+        <div class="profile-card">
+          <div class="profile-metric-title">Fastest Solve</div>
+          <div class="profile-metric-val text-info" id="metricFastestTime">—</div>
+          <div class="text-muted" style="font-size: 0.75rem;">Single puzzle record</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Difficulty Breakdown -->
+    <section class="card">
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;">Difficulty Breakdown</h3>
+      <div class="diff-breakdown-grid" id="diffBreakdownList">
+        <p class="text-muted">Loading breakdown...</p>
+      </div>
+    </section>
+
+    <!-- Historical Activity Log Table -->
+    <section class="card">
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 14px;">Recent Attempt Logs</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Difficulty</th>
+              <th class="text-center">Outcome</th>
+              <th>Your Answer</th>
+              <th>Points Awarded</th>
+              <th>Time Taken</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <tr>
+              <td colspan="6" class="text-center text-muted py-4">Loading session history...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>
+

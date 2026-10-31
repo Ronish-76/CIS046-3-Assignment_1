@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Banana Puzzle Challenge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <div class="app-wrapper">
+
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+      <a href="/" class="nav-brand">
+        <span class="brand-badge">🍌</span>
+        <span class="brand-title">Banana Admin</span>
+      </a>
+
+      <nav class="nav-menu">
+        <a href="/" class="nav-link"><i class="fa-solid fa-gamepad"></i> Game</a>
+        <a href="/profile.html" class="nav-link"><i class="fa-solid fa-chart-line"></i> Profile</a>
+        <a href="/admin.html" class="nav-link active"><i class="fa-solid fa-shield-halved"></i> Admin</a>
+
+        <button id="logoutBtn" class="btn btn-xs btn-outline" title="Sign out">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+      </nav>
+    </header>
+
+    <!-- Admin Overview Cards -->
+    <div class="admin-stats-summary">
+      <div class="stat-box">
+        <span class="stat-label">Registered Users</span>
+        <span class="stat-val" id="metricTotalUsers">0</span>
+        <span class="text-muted" style="font-size:0.75rem;">Total registered accounts</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">Total Puzzle Sessions</span>
+        <span class="stat-val text-primary" id="metricTotalSessions">0</span>
+        <span class="text-muted" style="font-size:0.75rem;">Logged game attempts</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">Points Distributed</span>
+        <span class="stat-val text-success" id="metricTotalPoints">0</span>
+        <span class="text-muted" style="font-size:0.75rem;">Cumulative points earned</span>
+      </div>
+    </div>
+
+    <!-- API Failure Simulation Demonstration Controller -->
+    <section class="failure-toggle-box">
+      <div>
+        <h4 style="font-size: 0.95rem; margin-bottom: 4px;">
+          <i class="fa-solid fa-bolt text-warning"></i> External API Resilience Test
+        </h4>
+        <p class="text-muted" style="font-size: 0.82rem;">
+          Simulate external Banana API failure to verify that the app gracefully cascades to mirror and 20 offline questions.
+        </p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="badge badge-success" id="failureStatusBadge">INACTIVE (Normal)</span>
+        <button id="toggleFailureBtn" class="btn btn-sm btn-outline">Toggle Failure</button>
+      </div>
+    </section>
+
+    <!-- User Accounts Registry -->
+    <section class="card">
+      <h3 class="admin-section-title">
+        <i class="fa-solid fa-users"></i> User Accounts Registry
+      </h3>
+      <div class="table-wrap">
+        <table class="dense-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Display Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Score</th>
+              <th>Solved</th>
+              <th>Created</th>
+              <th>Role Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminUsersTableBody">
+            <tr>
+              <td colspan="8" class="text-center text-muted py-4">Loading user registry...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Recent Global Sessions Audit Log (Fraud Management) -->
+    <section class="card">
+      <h3 class="admin-section-title">
+        <i class="fa-solid fa-list-check"></i> Recent Attempt Logs (Audit &amp; Purge)
+      </h3>
+      <div class="table-wrap">
+        <table class="dense-table">
+          <thead>
+            <tr>
+              <th>Session ID</th>
+              <th>Player</th>
+              <th>Difficulty</th>
+              <th class="text-center">Status</th>
+              <th>Score / Speed</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="adminSessionsTableBody">
+            <tr>
+              <td colspan="6" class="text-center text-muted py-4">Loading activity logs...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
+

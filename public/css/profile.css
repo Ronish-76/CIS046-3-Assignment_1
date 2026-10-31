@@ -1,0 +1,73 @@
+/**
+ * Profile Dashboard Styling
+ */
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.profile-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+.profile-metric-title {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profile-metric-val {
+  font-family: var(--font-mono);
+  font-size: 2.1rem;
+  font-weight: 700;
+  margin: 6px 0;
+}
+
+.diff-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.diff-card {
+  background: #000;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.diff-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.diff-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.diff-stats span {
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .profile-grid, .diff-breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
